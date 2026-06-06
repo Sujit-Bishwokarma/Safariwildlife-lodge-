@@ -1,11 +1,12 @@
 import { Room, Amenity, GalleryItem, Testimonial } from './types';
 
-// Let's import the local generated images accurately.
-// We can use these generated paths securely.
-const SAFARI_HERO_LODGE = '/src/assets/images/safari_hero_lodge_1780737625214.png';
-const SAFARI_SUITE_ROOM = '/src/assets/images/safari_suite_room_1780737640544.png';
-const SAFARI_DINING = '/src/assets/images/safari_dining_1780737654970.png';
-const SAFARI_RHINO = '/src/assets/images/safari_rhino_1780737668940.png';
+// Use dynamic asset references so Vite bundles them correctly in production systems like Netlify without needing static PNG type declarations.
+const SAFARI_HERO_LODGE = new URL('./assets/images/safari_hero_lodge_1780737625214.png', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
+const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
+const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
+
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
 export const ROOMS: Room[] = [
   {

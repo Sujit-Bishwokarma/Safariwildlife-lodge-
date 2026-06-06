@@ -28,7 +28,7 @@ import {
   X
 } from 'lucide-react';
 
-import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS } from './data';
+import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE } from './data';
 import { Room, BookingSubmission, GalleryItem } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -223,7 +223,7 @@ export default function App() {
         {/* Parallax Background Imagery */}
         <div className="absolute inset-0">
           <img
-            src="/src/assets/images/safari_hero_lodge_1780737625214.png"
+            src={SAFARI_HERO_LODGE}
             alt="Safari Wildlife Lodge Twilight Landscape"
             className="w-full h-full object-cover opacity-80 scale-105 transition-transform duration-[12000ms] group-hover:scale-100"
             referrerPolicy="no-referrer"
