@@ -1,0 +1,6 @@
+{
+  "name": "Safari Wildlife Lodge & Camp",
+  "description": "Stay Close to Nature, Closer to Adventure at Safari Wildlife Lodge & Camp. Experience comfortable accommodations and warm hospitality in Chitwan, Ratnanagar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
