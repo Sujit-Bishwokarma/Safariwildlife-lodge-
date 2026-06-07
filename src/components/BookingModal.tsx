@@ -129,8 +129,8 @@ export default function BookingModal({
             </button>
 
             {!isSubmitted ? (
-              <form onSubmit={handleSubmit} name="contact" method= "post" action"/" data-netlify="true" className="space-y-4">
-                <input type="hidden" name="form-name" value="contact" />
+              <form onSubmit={handleSubmit} name="booking" method="post" action="/" data-netlify="true" className="space-y-4">
+                <input type="hidden" name="form-name" value="booking" />
                 <div className="space-y-1 pr-6">
                   <div className="flex items-center gap-1.5 text-brass">
                     <Sparkles className="w-4 h-4" />
@@ -159,6 +159,7 @@ export default function BookingModal({
                       if (next) setActiveRoom(next);
                     }}
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass"
+                    name="suite"
                   >
                     {rooms.map(r => (
                       <option key={r.id} value={r.id}>
@@ -179,7 +180,8 @@ export default function BookingModal({
                     placeholder="e.g. Abhishek Shrestha"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/35"
+                    name="guestName"
+                    className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
                   />
                 </div>
 
@@ -194,7 +196,8 @@ export default function BookingModal({
                     placeholder="yourname@domain.com or +977 9XXXXXXXXX"
                     value={contactValue}
                     onChange={(e) => setContactValue(e.target.value)}
-                    className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/35"
+                    name="contactValue"
+                    className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
                   />
                 </div>
 
@@ -209,6 +212,7 @@ export default function BookingModal({
                       required
                       value={checkIn}
                       onChange={(e) => setCheckIn(e.target.value)}
+                      name="checkIn"
                       className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass"
                     />
                   </div>
@@ -223,6 +227,7 @@ export default function BookingModal({
                       disabled={!checkIn}
                       min={checkIn}
                       onChange={(e) => setCheckOut(e.target.value)}
+                      name="checkOut"
                       className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass disabled:opacity-50"
                     />
                   </div>
@@ -239,6 +244,7 @@ export default function BookingModal({
                     max={activeRoom?.capacity || 4}
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(Number(e.target.value))}
+                    name="guestsCount"
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass font-mono"
                   />
                   <span className="text-[10px] text-teal-dark/50 block mt-0.5">Max capacity: {activeRoom?.capacity || 4} guests</span>
@@ -258,7 +264,7 @@ export default function BookingModal({
                 <div className="pt-1">
                   <button
                     type="submit"
-                    className="w-full py-2.5 bg-teal-dark hover:bg-teal-light text-warm-white font-serif font-bold text-sm uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer text-brass-light"
+                    className="w-full py-2.5 bg-teal-dark hover:bg-teal-light text-warm-white font-serif font-bold text-sm uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95"
                     id="confirm-booking-btn"
                   >
                     Request Reservation
