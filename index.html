@@ -7,7 +7,17 @@
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Hidden Netlify form for booking submissions -->
+    <form name="booking" method="POST" netlify hidden>
+      <input type="text" name="guestName" />
+      <input type="text" name="contactValue" />
+      <input type="date" name="checkIn" />
+      <input type="date" name="checkOut" />
+      <input type="number" name="guestsCount" />
+      <input type="text" name="suite" />
+    </form>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
