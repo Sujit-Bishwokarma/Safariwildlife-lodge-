@@ -6,29 +6,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[[forms]]
-  name = "booking"
-  
-  [[forms.fields]]
-    name = "guestName"
-    required = true
-  [[forms.fields]]
-    name = "contactValue"
-    required = true
-  [[forms.fields]]
-    name = "checkIn"
-    required = true
-  [[forms.fields]]
-    name = "checkOut"
-    required = true
-  [[forms.fields]]
-    name = "guestsCount"
-  [[forms.fields]]
-    name = "suite"
-
-  [[forms.notifications]]
-    recipients = ["sujitkhati9@gmail.com"]
-    to = "sujitkhati9@gmail.com"
-    from_name = "Safari Wildlife Booking Form"
-    subject = "New Booking Request - {{ fields.guestName }}"
