@@ -28,7 +28,7 @@
     name = "suite"
 
   [[forms.notifications]]
-    recipients = ["sujitkhati7@gmail.com"]
-    to = "sujitkhati7@gmail.com"
+    recipients = ["sujitkhati9@gmail.com"]
+    to = "sujitkhati9@gmail.com"
     from_name = "Safari Wildlife Booking Form"
     subject = "New Booking Request - {{ fields.guestName }}"
