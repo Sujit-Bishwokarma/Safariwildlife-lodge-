@@ -870,7 +870,7 @@ export default function App() {
                 {/* Embedded standard Google Map centered on Chitwan, bacheuli road, Ratnanagar, coordinates approx. */}
                 <iframe
                   title="Safari Wildlife Lodge Location Map"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3536.6146405120726!2d84.49922839999999!3d27.574467799999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994ef03707a2cd3%3A0x89f764f394f149c2!2sSafariwildlife%20lodge%20and%20camp!5e0!3m2!1sen!2s!4v1780847611989!5m2!1sen!2s" width="600" height="450" style="border:0;"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3536.6146405120726!2d84.49922839999999!3d27.574467799999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994ef03707a2cd3%3A0x89f764f394f149c2!2sSafariwildlife%20lodge%20and%20camp!5e0!3m2!1sen!2s!4v1780847611989!5m2!1sen!2s" width="600" height="450"
                   allowFullScreen={false}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
