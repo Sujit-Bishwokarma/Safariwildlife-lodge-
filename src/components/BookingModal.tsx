@@ -129,7 +129,7 @@ export default function BookingModal({
             </button>
 
             {!isSubmitted ? (
-              <form onSubmit={handleSubmit} name="contact" data-netlify="true" className="space-y-4">
+              <form onSubmit={handleSubmit} name="contact" method= "post" action"/" data-netlify="true" className="space-y-4">
                 <input type="hidden" name="form-name" value="contact" />
                 <div className="space-y-1 pr-6">
                   <div className="flex items-center gap-1.5 text-brass">
