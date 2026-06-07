@@ -6,6 +6,7 @@ const SAFARI_SUITE_ROOM = new URL('./assets/images/IMG_20260606_214404.png', imp
 const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/IMG-20260606-WA0012.jpg', import.meta.url).href;
 const SAFARI_VILLA = new URL('./assets/images/IMG_20260606_214610.png', import.meta.url).href;
+const SAFARI_LOGO = new URL('./assets/images/IMG-20260606-WA0015.jpg', import.meta.url).href;
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_VILLA };
 
@@ -128,7 +129,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    imageUrl: SAFARI_LOGO,
     title: 'Warm Poolside & Relaxing Deck Chairs'
   },
   {
