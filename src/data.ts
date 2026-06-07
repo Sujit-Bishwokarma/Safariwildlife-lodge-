@@ -5,8 +5,9 @@ const SAFARI_HERO_LODGE = new URL('./assets/images/IMG_20260606_231903.png', imp
 const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
 const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
+const SAFARI_VILLA = new URL('./assets/images/IMG_20260606_214610.png', import.meta.url).href;
 
-export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_VILLA };
 
 export const ROOMS: Room[] = [
   {
@@ -37,7 +38,7 @@ export const ROOMS: Room[] = [
     capacity: 3,
     view: 'Grasslands & Sunrise View',
     priceNpr: 24000,
-    imageUrl: 'https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=1200&q=80',
+    imageUrl:  SAFARI_VILLA_ROOM,
     amenities: [
       'Authentic Silk Comfort Underlays',
       'Smart-Climate Humidifier & Multi-Zone AC',
