@@ -48,10 +48,10 @@ export default function BookingModal({
   const currentPrice = activeRoom ? activeRoom.priceNpr : 18500;
   const numDays = calculateDays();
   const subtotal = currentPrice * numDays;
-  const serviceCharge = Math.round(subtotal * 0.1); // 10% standard service charge
+  const serviceCharge = Math.round(subtotal * 0.1);
   const totalPricing = subtotal + serviceCharge;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName || !contactValue || !checkIn || !checkOut) {
       setErrorMsg('Please complete all reservation fields.');
@@ -63,28 +63,48 @@ export default function BookingModal({
       return;
     }
 
-    const newBooking: BookingSubmission = {
-      id: 'RES-' + Math.floor(100000 + Math.random() * 900000),
-      guestName,
-      contactMethod: contactValue.includes('@') ? 'email' : 'phone',
-      contactValue,
-      checkIn,
-      checkOut,
-      guestsCount,
-      roomId: activeRoom?.id || 'unknown',
-      roomName: activeRoom?.name || 'Deluxe Room',
-      status: 'pending',
-      pricingNpr: totalPricing
-    };
+    const formData = new FormData();
+    formData.append('form-name', 'booking');
+    formData.append('guestName', guestName);
+    formData.append('contactValue', contactValue);
+    formData.append('checkIn', checkIn);
+    formData.append('checkOut', checkOut);
+    formData.append('guestsCount', guestsCount.toString());
+    formData.append('suite', activeRoom?.name || 'Standard Room');
 
-    // Save to local storage
-    const existingBookings = JSON.parse(localStorage.getItem('safari_bookings') || '[]');
-    existingBookings.push(newBooking);
-    localStorage.setItem('safari_bookings', JSON.stringify(existingBookings));
+    try {
+      // Submit to Netlify
+      await fetch('/', {
+        method: 'POST',
+        body: formData,
+      });
 
-    onBookingSuccess(newBooking);
-    setIsSubmitted(true);
-    setErrorMsg('');
+      // Local storage backup
+      const newBooking: BookingSubmission = {
+        id: 'RES-' + Math.floor(100000 + Math.random() * 900000),
+        guestName,
+        contactMethod: contactValue.includes('@') ? 'email' : 'phone',
+        contactValue,
+        checkIn,
+        checkOut,
+        guestsCount,
+        roomId: activeRoom?.id || 'unknown',
+        roomName: activeRoom?.name || 'Deluxe Room',
+        status: 'pending',
+        pricingNpr: totalPricing
+      };
+
+      const existingBookings = JSON.parse(localStorage.getItem('safari_bookings') || '[]');
+      existingBookings.push(newBooking);
+      localStorage.setItem('safari_bookings', JSON.stringify(existingBookings));
+
+      onBookingSuccess(newBooking);
+      setIsSubmitted(true);
+      setErrorMsg('');
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setErrorMsg('Failed to submit booking. Please try again.');
+    }
   };
 
   const resetForm = () => {
@@ -101,7 +121,6 @@ export default function BookingModal({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -111,7 +130,6 @@ export default function BookingModal({
             id="modal-backdrop"
           />
 
-          {/* Form container */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -119,7 +137,6 @@ export default function BookingModal({
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
             className="relative w-full max-w-md bg-warm-white rounded-2xl shadow-xl overflow-hidden border border-brass/35 z-10 p-6 sm:p-7 max-h-[92vh] overflow-y-auto"
           >
-            {/* Close Button */}
             <button
               onClick={resetForm}
               className="absolute top-4 right-4 text-teal-dark/70 hover:text-brass transition-colors p-1.5 rounded-full hover:bg-teal-dark/5"
@@ -129,8 +146,7 @@ export default function BookingModal({
             </button>
 
             {!isSubmitted ? (
-              <form onSubmit={handleSubmit} name="booking" method="post" action="/" data-netlify="true" className="space-y-4">
-                <input type="hidden" name="form-name" value="booking" />
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1 pr-6">
                   <div className="flex items-center gap-1.5 text-brass">
                     <Sparkles className="w-4 h-4" />
@@ -147,7 +163,6 @@ export default function BookingModal({
                   </div>
                 )}
 
-                {/* Room Selection */}
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono">
                     Select Suite
@@ -159,7 +174,6 @@ export default function BookingModal({
                       if (next) setActiveRoom(next);
                     }}
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass"
-                    name="suite"
                   >
                     {rooms.map(r => (
                       <option key={r.id} value={r.id}>
@@ -169,7 +183,6 @@ export default function BookingModal({
                   </select>
                 </div>
 
-                {/* Full Name */}
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono flex items-center gap-1">
                     <User className="w-3.5 h-3.5 text-brass" /> Guest Name
@@ -180,12 +193,10 @@ export default function BookingModal({
                     placeholder="e.g. Abhishek Shrestha"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    name="guestName"
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
                   />
                 </div>
 
-                {/* Contact */}
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono flex items-center gap-1">
                     <Phone className="w-3.5 h-3.5 text-brass" /> Phone or Email
@@ -196,12 +207,10 @@ export default function BookingModal({
                     placeholder="yourname@domain.com or +977 9XXXXXXXXX"
                     value={contactValue}
                     onChange={(e) => setContactValue(e.target.value)}
-                    name="contactValue"
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
                   />
                 </div>
 
-                {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono flex items-center gap-1">
@@ -212,7 +221,6 @@ export default function BookingModal({
                       required
                       value={checkIn}
                       onChange={(e) => setCheckIn(e.target.value)}
-                      name="checkIn"
                       className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass"
                     />
                   </div>
@@ -227,13 +235,11 @@ export default function BookingModal({
                       disabled={!checkIn}
                       min={checkIn}
                       onChange={(e) => setCheckOut(e.target.value)}
-                      name="checkOut"
                       className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass disabled:opacity-50"
                     />
                   </div>
                 </div>
 
-                {/* Guest Capacity Selection */}
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono block">
                     No. of Guests
@@ -244,13 +250,11 @@ export default function BookingModal({
                     max={activeRoom?.capacity || 4}
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(Number(e.target.value))}
-                    name="guestsCount"
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass font-mono"
                   />
                   <span className="text-[10px] text-teal-dark/50 block mt-0.5">Max capacity: {activeRoom?.capacity || 4} guests</span>
                 </div>
 
-                {/* Direct payment note */}
                 <div className="bg-brass/10 border border-brass/25 rounded-xl p-3 text-[11px] text-teal-dark/75 leading-relaxed space-y-1">
                   <div className="flex justify-between font-semibold">
                     <span>Est. Space Value:</span>
