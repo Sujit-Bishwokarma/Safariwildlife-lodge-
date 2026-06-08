@@ -11,9 +11,10 @@ const SAFARI_CHAIR = new URL('./assets/images/Chair.jpg', import.meta.url).href;
 const SAFARI_TOILET = new URL('./assets/images/Toilet.jpeg', import.meta.url).href;
 const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
 const SAFARI_SNAKE = new URL('./assets/images/Snake.jpg', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
+const SAFARI_TOURISTDINING = new URL('./assets/images/Tourist_dining.jpg', import.meta.url).href;
+const SAFARI_BOAT = new URL('./assets/images/Boat_1780387231489.jpg', import.meta.url).href;
+const SAFARI_TOWER = new URL('./assets/images/Tower_IMG_1780842806696.jpg', import.meta.url).href;
+const SAFARI_BUILDING = new URL('./assets/images/Building.jpg', import.meta.url).href;
 
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
@@ -94,6 +95,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g2',
     category: 'Dining',
+    imageUrl: SAFARI_TOURISTDINING
     imageUrl: SAFARI_DINING,
     imageUrl: SAFARI_OUTDINING,
     imageUrl: SAFARI_CHAIR,
@@ -118,15 +120,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    imageUrl: SAFARI_BOAT,
+    imageUrl: SAFARI_TOWER,
+    imageUrl: SAFARI_BUILDING,
     title: 'Warm Poolside & Relaxing Deck Chairs'
   },
-  {
-    id: 'g6',
-    category: 'Wildlife',
-    imageUrl: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=800&q=80',
-    title: 'Chitwan Birds & Jungle Canopy Excursion'
-  }
 ];
 
 export const TESTIMONIALS: Testimonial[] = [
