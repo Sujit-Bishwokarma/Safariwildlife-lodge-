@@ -1,72 +1,51 @@
 import { Room, Amenity, GalleryItem, Testimonial } from './types';
 
 // Use dynamic asset references so Vite bundles them correctly in production systems like Netlify without needing static PNG type declarations.
-const SAFARI_HERO_LODGE = new URL('./assets/images/IMG_20260606_231903.png', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/IMG_20260606_214404.png', import.meta.url).href;
+const SAFARI_HERO_LODGE = new URL('./assets/images/safari_courtyard_original.jpg', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
 const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
-const SAFARI_RHINO = new URL('./assets/images/IMG-20260606-WA0012.jpg', import.meta.url).href;
-const SAFARI_VILLA = new URL('./assets/images/IMG_20260606_214610.png', import.meta.url).href;
-const SAFARI_LOGO = new URL('./assets/images/IMG-20260606-WA0015.jpg', import.meta.url).href;
+const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
 
-export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_VILLA };
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
 export const ROOMS: Room[] = [
   {
-    id: 'elephant-breeze-suite',
-    name: 'Elephant Breeze Suite',
-    description: 'A spectacular elevated suite designed with local timber and large viewing windows, providing a refreshing river breeze and front-row seats to the wild canopy.',
+    id: 'luxury-suite',
+    name: 'Luxury Suite',
+    description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, premium king-size bedding, and large windows that fill the space with clear natural light.',
     size: '55 m²',
     bedType: '1 Extra-Large King Bed',
     capacity: 2,
-    view: 'Rapti River & Canopy View',
+    view: 'Lodge Gardens & Forest View',
     priceNpr: 18500,
     imageUrl: SAFARI_SUITE_ROOM,
     amenities: [
-      'Ultra-Plush Egyptian Cotton Bedding',
-      'Whisper-Quiet Air Conditioning',
-      'Electronic Digital Safe Secure-Vault',
-      'Secure Double-Lock Timber Mortise System',
-      'Acoustic-Inulated Glass Paneling'
+      'Plush Premium Cottons & Pillows',
+      'Quiet Multi-Zone Air Conditioning',
+      'Digital Secure Guest Safe',
+      'Modern En-suite Bathroom with Hot Shower',
+      'Tea & Coffee Selection'
     ],
-    highlight: 'Private elevated balcony over riverfront path'
+    highlight: 'Private balcony overlooking nature'
   },
   {
-    id: 'rhino-canopy-villa',
-    name: 'Rhino Canopy Villa',
-    description: 'A signature luxury villa standing gracefully in Churia-hill clay and slate. Perfect for guests seeking absolute peace with state-of-the-art security and supreme comfort.',
-    size: '72 m²',
-    bedType: '1 King Bed & 1 Soft Daybed',
-    capacity: 3,
-    view: 'Grasslands & Sunrise View',
-    priceNpr: 24000,
-    imageUrl:  SAFARI_VILLA,
-    amenities: [
-      'Authentic Silk Comfort Underlays',
-      'Smart-Climate Humidifier & Multi-Zone AC',
-      'Heavy-Duty Electronic Deadbolt Doors',
-      '24/7 Dedicated Wildlife Ranger Area Patrol',
-      'Tempered Fire-Resistant Boundary Framing'
-    ],
-    highlight: 'Outdoor deep-soak stone bathtub'
-  },
-  {
-    id: 'tiger-den-sanctuary',
-    name: 'Tiger Den Sanctuary',
-    description: 'Our most premium lodging featuring floor-to-ceiling panoramic glass panels, offering close connection with nature while ensuring impenetrable security and modern comfort.',
-    size: '95 m²',
-    bedType: '1 Royal King Bed',
+    id: 'deluxe-cottage',
+    name: 'Deluxe Cottage',
+    description: 'A cozy and charming standalone cottage that borders our tranquil gardens. This space offers supreme comfort in a highly restful jungle-adjacent atmosphere.',
+    size: '45 m²',
+    bedType: '1 King Bed or 2 Twin Beds',
     capacity: 2,
-    view: 'Chitwan National Park Border Forest',
-    priceNpr: 32500,
+    view: 'Resort Courtyard & Garden View',
+    priceNpr: 14500,
     imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
     amenities: [
-      'Anti-Gravity Premium Latex Sleep System',
-      'Fully Integrated Comfort Lounge Seating',
-      'Triple-Redundant biometric/PIN safe custody drawer',
-      'Multi-Point Secure Shutter Protectors',
-      'Direct-to-Front-Desk Panic Assistance Link'
+      'Premium Bedding & Linens',
+      'Individually Controlled AC',
+      'Digital Guest Vault',
+      'Private Veranda with Lounge Seating',
+      'Complimentary Bottled Spring Water'
     ],
-    highlight: 'Private dipping pool & automated security glass'
+    highlight: 'Outdoor garden seating area'
   }
 ];
 
@@ -129,7 +108,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrl: SAFARI_LOGO,
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
     title: 'Warm Poolside & Relaxing Deck Chairs'
   },
   {

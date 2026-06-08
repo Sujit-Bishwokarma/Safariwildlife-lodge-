@@ -224,12 +224,12 @@ export default function App() {
         <div className="absolute inset-0">
           <img
             src={SAFARI_HERO_LODGE}
-            alt="Safari Wildlife Lodge Twilight Landscape"
-            className="w-full h-full object-cover opacity-80 scale-105 transition-transform duration-[12000ms] group-hover:scale-100"
+            alt="Safari Wildlife Lodge Courtyard"
+            className="w-full h-full object-cover opacity-100"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-teal-dark via-teal-dark/30 to-transparent" />
-          <div className="absolute inset-0 bg-black/15" />
+          <div className="absolute inset-0 bg-gradient-to-t from-teal-dark via-teal-dark/15 to-transparent" />
+          <div className="absolute inset-0 bg-black/20" />
         </div>
 
         {/* Hero Text Contents */}
@@ -431,7 +431,7 @@ export default function App() {
           </div>
 
           {/* Rooms Grid Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto w-full">
             {ROOMS.map((room, idx) => (
               <motion.div 
                 key={room.id}
@@ -870,7 +870,8 @@ export default function App() {
                 {/* Embedded standard Google Map centered on Chitwan, bacheuli road, Ratnanagar, coordinates approx. */}
                 <iframe
                   title="Safari Wildlife Lodge Location Map"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3536.6146405120726!2d84.49922839999999!3d27.574467799999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994ef03707a2cd3%3A0x89f764f394f149c2!2sSafariwildlife%20lodge%20and%20camp!5e0!3m2!1sen!2s!4v1780847611989!5m2!1sen!2s" width="600" height="450"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14143.51322194849!2d84.48202511738281!3d27.597334750000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994ef7ed52d7dd9%3A0xe54fb7973041c2c3!2zQmFjaGV1bGksIFJhdG5hbmFnYXIgNDQ0MDAsIE5lcGFs!5e0!3m2!1sen!2snp!4v1780737400000!5m2!1sen!2snp"
+                  className="w-full h-full border-0"
                   allowFullScreen={false}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
