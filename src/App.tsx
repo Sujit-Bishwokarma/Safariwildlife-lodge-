@@ -681,9 +681,6 @@ export default function App() {
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                       referrerPolicy="no-referrer"
                     />
-                    
-                    {/* Multi-layered cinematic overlay shadow */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/95 via-teal-dark/40 to-black/10 pointer-events-none" />
 
                     {/* Content Details on active slide */}
                     <div className="relative p-6 sm:p-10 md:p-12 text-warm-white space-y-2 pointer-events-none max-w-xl">
