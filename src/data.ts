@@ -89,14 +89,27 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g1',
     category: 'Lodge & Grounds',
-    imageUrls: [SAFARI_HERO_LODGE],
-    title: 'Safari Wildlife Lodge & Camp Twilight Vista'
+    imageUrl: SAFARI_HERO_LODGE,
   },
   {
     id: 'g2',
+    category: 'Lodge & Grounds',
+    imageUrl: SAFARI_TOURISTDINING,
+  },
+  {
+    id: 'g3',
+    category: 'Lodge & Grounds',
+    imageUrl: [SAFARI_DINING,
+  },
+  {
+    id: 'g4',
+    category: 'Lodge & Grounds',
+    imageUrl: SAFARI_BOAT,
+  },
+  {
+    id: 'g5',
     category: 'Dining',
-    imageUrls: [SAFARI_TOURISTDINING, SAFARI_DINING, SAFARI_OUTDINING, SAFARI_CHAIR],
-    title: 'Bush Dining & Fine Nepalese Hospitality'
+    imageUrl:  SAFARI_OUTDINING,
   },
   {
     id: 'g3',
@@ -113,7 +126,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrls: [SAFARI_BOAT,SAFARI_TOWER,SAFARI_BUILDING,],
+    imageUrls: [,SAFARI_TOWER,SAFARI_BUILDING,],
     title: 'Warm Poolside & Relaxing Deck Chairs'
   },
 ];
