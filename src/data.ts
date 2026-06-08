@@ -95,7 +95,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g2',
     category: 'Dining',
-    imageUrl: SAFARI_TOURISTDINING
+    imageUrl: SAFARI_TOURISTDINING,
     imageUrl: SAFARI_DINING,
     imageUrl: SAFARI_OUTDINING,
     imageUrl: SAFARI_CHAIR,
