@@ -6,6 +6,23 @@ const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_17807376405
 const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
 
+// Additional Dynamic Asset References
+const SAFARI_HERO_ENHANCED = new URL('./assets/images/safari_hero_enhanced_1780749642176.png', import.meta.url).href;
+const SAFARI_RESORT_COURTYARD = new URL('./assets/images/safari_resort_courtyard_1780749113437.png', import.meta.url).href;
+const SAFARI_HERO_LODGE_ALT = new URL('./assets/images/safari_hero_lodge_1780737625214.png', import.meta.url).href;
+
+const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_BIRDS_EXCURSION = new URL('https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_TIGER_PATROL = new URL('https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_VERANDA_GARDENS = new URL('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_DEER_DAWN = new URL('https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_CULINARY_DINING = new URL('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_ELEPHANT_CLOSE = new URL('https://images.unsplash.com/photo-1551085254-e96b210db58a?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_RIVER_SUNSET = new URL('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_JUNGLE_PATH = new URL('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_CROCODILE = new URL('https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_CAMP_BONFIRE = new URL('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
 export const ROOMS: Room[] = [
@@ -102,38 +119,68 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_POOL_DECK,
     title: 'Lush Tropical Oasis Pool Side Deck'
   },
   {
     id: 'g6',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_BIRDS_EXCURSION,
     title: 'Chitwan Birds & Jungle Canopy Excursion'
   },
   {
     id: 'g7',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_TIGER_PATROL,
     title: 'Majestic Royal Bengal Tiger on Jungle Patrol'
   },
   {
     id: 'g8',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_VERANDA_GARDENS,
     title: 'Lodge Main Building & Veranda Gardens'
   },
   {
     id: 'g9',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_DEER_DAWN,
     title: 'Chitwan Spotted Deer Grazing at Dawn'
   },
   {
     id: 'g10',
     category: 'Lodge',
-    imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_CULINARY_DINING,
     title: 'Curated Organic Culinary Dining Tables'
+  },
+  {
+    id: 'g11',
+    category: 'Lodge',
+    imageUrl: SAFARI_ELEPHANT_CLOSE,
+    title: 'Majestic Safari Elephant Jungle Crossing'
+  },
+  {
+    id: 'g12',
+    category: 'Lodge',
+    imageUrl: SAFARI_RIVER_SUNSET,
+    title: 'Rapti River Canoe Excursion at Golden Sunset'
+  },
+  {
+    id: 'g13',
+    category: 'Lodge',
+    imageUrl: SAFARI_JUNGLE_PATH,
+    title: 'Mist-Covered Jungle Trail & Nature Canopy'
+  },
+  {
+    id: 'g14',
+    category: 'Lodge',
+    imageUrl: SAFARI_CROCODILE,
+    title: 'Gharial Crocodile Basking near River Bank'
+  },
+  {
+    id: 'g15',
+    category: 'Lodge',
+    imageUrl: SAFARI_CAMP_BONFIRE,
+    title: 'Evening Safari Camp Bonfire Under Night Sky'
   }
 ];
 
