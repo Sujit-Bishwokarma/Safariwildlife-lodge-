@@ -11,14 +11,14 @@ const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import
 const SAFARI_RHINO = new URL('./assets/images/Rhino-20260606-WA0012.jpg', import.meta.url).href;
 const SAFARI_TOURIST_DINING = new URL('./assets/images/Tourist_dining.jpg', import.meta.url).href;
 const SAFARI_RECIP = new URL('./assets/images/IMG_20260606_214558.png', import.meta.url).href;
-const SAFARI_OUTDINING = new URL('./assets/imagesOutdoor_dining.jpg', import.meta.url).href;
+const SAFARI_OUTDINING = new URL('./assets/images/Outdoor_dining.jpg', import.meta.url).href;
 const SAFARI_TOILET = new URL('./assets/images/Toilet.jpeg', import.meta.url).href;const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
 const SAFARI_TOWER = new URL('./assets/images/Tower_IMG_1780842806696.jpg', import.meta.url).href;
 const SAFARI_BUILDING = new URL('./assets/images/Building.jpg', import.meta.url).href;
 const SAFARI_CHAIR = new URL('./assets/images/Chair.jpg', import.meta.url).href;
 
 
-export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM };
 
 export const ROOMS: Room[] = [
   {
@@ -45,7 +45,7 @@ export const ROOMS: Room[] = [
     bedType: '1 King Bed or 2 Twin Beds',
     capacity: 3,
     view: 'Resort Courtyard & Garden View',
-    priceNpr: 1,700,
+    priceNpr: 1700,
     imageUrl: SAFARI_DOUBLE_BED,
     amenities: [
       'Air Conditioning',
