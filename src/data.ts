@@ -3,9 +3,13 @@ import { Room, Amenity, GalleryItem, Testimonial } from './types';
 // Use dynamic asset references so Vite bundles them correctly in production systems like Netlify without needing static PNG type declarations.
 const SAFARI_HERO_LODGE = new URL('./assets/images/Homepage_20260606_231903.png', import.meta.url).href;
 const SAFARI_SINGLE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
-const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
+const SAFARI_DINING = new URL('./assets/images/IMG_20260606_214558.png', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
 const SAFARI_DOUBLE_ROOM = new URL('./assets/images/Double_bed.png', import.meta.url).href;
+const SAFARI_OUTDINING = new URL('./assets/images/Outdoor_dining.jpg', import.meta.url).href;
+const SAFARI_CHAIR = new URL('./assets/images/Chair.jpg', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
@@ -86,6 +90,8 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g2',
     category: 'Dining',
     imageUrl: SAFARI_DINING,
+    imageUrl: SAFARI_OUTDINING,
+    imageUrl: SAFARI_CHAIR,
     title: 'Bush Dining & Fine Nepalese Hospitality'
   },
   {
