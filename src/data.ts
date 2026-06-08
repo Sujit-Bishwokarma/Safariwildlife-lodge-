@@ -4,12 +4,17 @@ import { Room, Amenity, GalleryItem, Testimonial } from './types';
 const SAFARI_HERO_LODGE = new URL('./assets/images/Homepage_20260606_231903.png', import.meta.url).href;
 const SAFARI_SINGLE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
 const SAFARI_DINING = new URL('./assets/images/IMG_20260606_214558.png', import.meta.url).href;
-const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
+const SAFARI_RHINO = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
 const SAFARI_DOUBLE_ROOM = new URL('./assets/images/Double_bed.png', import.meta.url).href;
 const SAFARI_OUTDINING = new URL('./assets/images/Outdoor_dining.jpg', import.meta.url).href;
 const SAFARI_CHAIR = new URL('./assets/images/Chair.jpg', import.meta.url).href;
+const SAFARI_TOILET = new URL('./assets/images/Toilet.jpeg', import.meta.url).href;
+const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
+const SAFARI_SNAKE = new URL('./assets/images/Snake.jpg', import.meta.url).href;
 const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
 const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
+
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
@@ -99,12 +104,15 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Rooms',
     imageUrl: SAFARI_SINGLE_ROOM,
     imageUrl: SAFARI_DOUBLE_ROOM,
+    imageUrl: SAFARI_TOILET,
     title: 'Safari Luxury Suite Master Bed layout'
   },
   {
     id: 'g4',
     category: 'Wildlife',
     imageUrl: SAFARI_RHINO,
+    imageUrl: SAFARI_RHINOS,
+    imageUrl: SAFARI_SNAKE,
     title: 'One-horned Rhino close to Rapti River paths'
   },
   {
