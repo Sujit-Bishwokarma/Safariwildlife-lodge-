@@ -20,11 +20,8 @@ export const ROOMS: Room[] = [
     priceNpr: 18500,
     imageUrl: SAFARI_SUITE_ROOM,
     amenities: [
-      'Plush Premium Cottons & Pillows',
-      'Quiet Multi-Zone Air Conditioning',
-      'Digital Secure Guest Safe',
-      'Modern En-suite Bathroom with Hot Shower',
-      'Tea & Coffee Selection'
+      'Air Conditioning',
+      'Comfort'
     ],
     highlight: 'Private balcony overlooking nature'
   },
@@ -39,11 +36,8 @@ export const ROOMS: Room[] = [
     priceNpr: 14500,
     imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
     amenities: [
-      'Premium Bedding & Linens',
-      'Individually Controlled AC',
-      'Digital Guest Vault',
-      'Private Veranda with Lounge Seating',
-      'Complimentary Bottled Spring Water'
+      'Air Conditioning',
+      'Comfort'
     ],
     highlight: 'Outdoor garden seating area'
   }

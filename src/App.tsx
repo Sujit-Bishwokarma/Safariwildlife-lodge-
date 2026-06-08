@@ -478,82 +478,76 @@ export default function App() {
           </div>
 
           {/* Rooms Grid Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
             {ROOMS.map((room, idx) => (
               <motion.div 
                 key={room.id}
-                initial={{ opacity: 0, y: 35 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.7, delay: idx * 0.15 }}
-                whileHover={{ y: -8, transition: { duration: 0.25 } }}
-                className="bg-white rounded-xl overflow-hidden border border-brass/20 flex flex-col justify-between shadow-md hover:shadow-xl transition-all duration-300 relative group"
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="bg-white rounded-lg border border-brass/25 hover:border-brass/50 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative group"
               >
-                {/* Image Section */}
-                <div className="relative h-64 overflow-hidden bg-teal-dark/10">
+                {/* Clean Image Banner */}
+                <div className="relative h-48 overflow-hidden bg-teal-dark/5">
                   <img
                     src={room.imageUrl}
                     alt={room.name}
-                    className="w-full h-full object-cover transition-transform duration-[6000ms] group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                     referrerPolicy="no-referrer"
                   />
                   
-                  {/* Absolute Badge for Highlighting Feature */}
-                  <div className="absolute top-4 left-4 bg-teal-dark/95 text-brass border border-brass/40 text-xs uppercase font-mono tracking-wider px-2.5 py-1 rounded backdrop-blur-sm">
+                  {/* Badge */}
+                  <div className="absolute top-3 left-3 bg-teal-dark/95 text-brass border border-brass/40 text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded">
                     {room.highlight}
-                  </div>
-
-                  {/* Rating Indicator */}
-                  <div className="absolute bottom-4 right-4 bg-warm-white/95 text-teal-dark text-xs font-mono uppercase tracking-wider px-2.5 py-1 rounded flex items-center gap-1 shadow-sm">
-                    <Star className="w-3.5 h-3.5 text-brass fill-brass" />
-                    <span>5.0 Secured</span>
                   </div>
                 </div>
 
-                {/* Info Content */}
-                <div className="p-5 md:p-6 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1.5">
-                    <h3 className="font-serif text-xl md:text-2xl text-teal-dark leading-tight group-hover:text-brass transition-colors font-bold">
-                      {room.name}
-                    </h3>
-                    <p className="text-sm text-teal-dark/70 leading-relaxed min-h-[48px]">
+                {/* Simplified Info Box */}
+                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-baseline gap-2">
+                      <h3 className="font-serif text-xl font-bold text-teal-dark group-hover:text-brass transition-colors">
+                        {room.name}
+                      </h3>
+                      <span className="text-xs font-mono text-teal-dark/65 bg-warm-cream/45 px-2 py-0.5 rounded border border-brass/10 shrink-0">
+                        {room.size}
+                      </span>
+                    </div>
+                    <p className="text-xs text-teal-dark/75 leading-relaxed">
                       {room.description}
                     </p>
                   </div>
 
-                  {/* Comfort & Security Specific Key Amenities checklist */}
-                  <div className="space-y-1.5 border border-teal-dark/5 bg-warm-cream/30 p-3 rounded-lg">
-                    <p className="text-[11px] uppercase font-mono tracking-widest text-brass font-bold mb-1">Comfort & Guarded Security Amenities:</p>
-                    {room.amenities.map((amenity, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-sm text-teal-dark/85">
-                        <Check className="w-4 h-4 text-brass mt-0.5 shrink-0" />
-                        <span>{amenity}</span>
-                      </div>
-                    ))}
+                  {/* Highlights/Amenities list in light tags */}
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-brass/90 block">Guaranteed Comforts:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {room.amenities.map((amen, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 text-xs text-teal-dark/80 bg-warm-cream/20 px-2 py-1 rounded border border-brass/10">
+                          <Check className="w-3 h-3 text-brass shrink-0" />
+                          <span>{amen}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Room Area Details */}
-                  <div className="flex justify-between items-center text-sm font-mono text-teal-dark/65">
-                    <span>📐 Size: {room.size}</span>
-                    <span>🛏️ Bed: 1 King Suite</span>
-                  </div>
-
-                  {/* Pricing and Glowing Call to Action */}
-                  <div className="pt-3 border-t border-teal-dark/5 flex items-center justify-between">
+                  {/* Booking and Pricing Footer Box */}
+                  <div className="pt-3 border-t border-teal-dark/10 flex items-center justify-between">
                     <div>
-                      <span className="block text-xs uppercase font-mono tracking-widest text-teal-dark/50">Exclusive Rate</span>
+                      <span className="block text-[9px] font-mono uppercase tracking-widest text-teal-dark/50">Exclusive Rate</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-2xl font-serif font-semibold text-teal-dark">Rs {room.priceNpr.toLocaleString('en-NP')}</span>
-                        <span className="text-xs text-teal-dark/60">/ Night</span>
+                        <span className="text-xl font-serif font-bold text-teal-dark">Rs {room.priceNpr.toLocaleString('en-NP')}</span>
+                        <span className="text-[10px] font-mono text-teal-dark/60">/ Night</span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleOpenBooking(room)}
-                      className="px-5 py-2.5 bg-teal-dark text-warm-white font-serif text-sm uppercase tracking-widest font-bold rounded hover:bg-teal-mid transition-all btn-glow text-brass cursor-pointer"
+                      className="px-4 py-2 bg-teal-dark hover:bg-brass text-brass hover:text-teal-dark font-serif text-xs uppercase tracking-widest font-bold rounded border border-brass/20 hover:border-teal-dark transition-all duration-300 cursor-pointer"
                       id={`book-${room.id}`}
                     >
-                      Book Suite
+                      Book Room
                     </button>
                   </div>
                 </div>
@@ -997,10 +991,10 @@ export default function App() {
 
               {/* EMBEDDED GOOGLE MAPS LINKED DIRECTLY */}
               <div className="rounded-xl overflow-hidden shadow-md border border-brass/25 h-72 relative">
-                {/* Embedded standard Google Map centered on Chitwan, bacheuli road, Ratnanagar, coordinates approx. */}
+                {/* Embedded standard Google Map centered precisely on the user-specified exact location */}
                 <iframe
                   title="Safari Wildlife Lodge Location Map"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14143.51322194849!2d84.48202511738281!3d27.597334750000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3994ef7ed52d7dd9%3A0xe54fb7973041c2c3!2zQmFjaGV1bGksIFJhdG5hbmFnYXIgNDQ0MDAsIE5lcGFs!5e0!3m2!1sen!2snp!4v1780737400000!5m2!1sen!2snp"
+                  src="https://maps.google.com/maps?q=Safariwildlife%20lodge%20and%20camp%2C%20Museum%2C%20bacheuli%20road%2C%20Ratnanagar%2000977&t=&z=16&ie=UTF8&iwloc=&output=embed"
                   className="w-full h-full border-0"
                   allowFullScreen={false}
                   loading="lazy"
