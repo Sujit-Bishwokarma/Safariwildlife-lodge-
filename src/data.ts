@@ -95,31 +95,25 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g2',
     category: 'Dining',
-    imageUrl: [SAFARI_TOURISTDINING, SAFARI_DINING, SAFARI_OUTDINING, SAFARI_CHAIR],
+    imageUrls: [SAFARI_TOURISTDINING, SAFARI_DINING, SAFARI_OUTDINING, SAFARI_CHAIR],
     title: 'Bush Dining & Fine Nepalese Hospitality'
   },
   {
     id: 'g3',
     category: 'Rooms',
-    imageUrl: SAFARI_SINGLE_ROOM,
-    imageUrl: SAFARI_DOUBLE_ROOM,
-    imageUrl: SAFARI_TOILET,
+    imageUrls: [SAFARI_SINGLE_ROOM,SAFARI_DOUBLE_ROOM, SAFARI_TOILET],
     title: 'Safari Luxury Suite Master Bed layout'
   },
   {
     id: 'g4',
     category: 'Wildlife',
-    imageUrl: SAFARI_RHINO,
-    imageUrl: SAFARI_RHINOS,
-    imageUrl: SAFARI_SNAKE,
+    imageUrls: [SAFARI_RHINO,SAFARI_RHINOS,SAFARI_SNAKE,],
     title: 'One-horned Rhino close to Rapti River paths'
   },
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrl: SAFARI_BOAT,
-    imageUrl: SAFARI_TOWER,
-    imageUrl: SAFARI_BUILDING,
+    imageUrls: [SAFARI_BOAT,SAFARI_TOWER,SAFARI_BUILDING,],
     title: 'Warm Poolside & Relaxing Deck Chairs'
   },
 ];
