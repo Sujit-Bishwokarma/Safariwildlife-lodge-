@@ -7,9 +7,9 @@ const SAFARI_DOUBLE_BED= new URL('./assets/images/Double_bed.png', import.meta.u
 const SAFARI_BOAT = new URL('./assets/images/Boat_1780387231489.jpg', import.meta.url).href;
 
 // Additional Dynamic Asset References
-const SAFARI_RHINOS = new URL('./assets/images/safari_hero_enhanced_1780749642176.png', import.meta.url).href;
-const SAFARI_RHINO = new URL('./assets/images/safari_resort_courtyard_1780749113437.png', import.meta.url).href;
-const SAFARI_TOURIST_DINING = new URL('./assets/images/safari_hero_lodge_1780737625214.png', import.meta.url).href;
+const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
+const SAFARI_RHINO = new URL('./assets/images/Rhino-20260606-WA0012.jpg', import.meta.url).href;
+const SAFARI_TOURIST_DINING = new URL('./assets/images/Tourist_dining.jpg', import.meta.url).href;
 
 const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
 const SAFARI_BIRDS_EXCURSION = new URL('https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
@@ -119,13 +119,13 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g5',
     category: 'Lodge',
-    imageUrl: SAFARI_POOL_DECK,
+    imageUrl: SAFARI_RHINOS,
     title: 'Lush Tropical Oasis Pool Side Deck'
   },
   {
     id: 'g6',
     category: 'Lodge',
-    imageUrl: SAFARI_BIRDS_EXCURSION,
+    imageUrl: SAFARI_TOURIST_DINING,
     title: 'Chitwan Birds & Jungle Canopy Excursion'
   },
   {
