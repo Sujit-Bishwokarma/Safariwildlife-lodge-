@@ -89,7 +89,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g1',
     category: 'Lodge & Grounds',
-    imageUrl: SAFARI_HERO_LODGE,
+    imageUrls: [SAFARI_HERO_LODGE],
     title: 'Safari Wildlife Lodge & Camp Twilight Vista'
   },
   {
