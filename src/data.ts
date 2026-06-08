@@ -102,13 +102,13 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g3',
     category: 'Lodge',
     imageUrl: SAFARI_SUITE_ROOM,
-    title: 'Safari Luxury Suite Master Bed layout'
+    title: 'Safari Suite  Bed layout'
   },
   {
     id: 'g4',
     category: 'Lodge',
     imageUrl: SAFARI_RHINO,
-    title: 'One-horned Rhino close to Rapti River paths'
+    title: 'One-horned Rhino close to Rapti River'
   },
   {
     id: 'g5',
@@ -119,43 +119,42 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g6',
     category: 'Lodge',
     imageUrl: SAFARI_TOURIST_DINING,
-    title: 'ENJOYING FOOD'
+    title: 'Our Beautiful Guests'
   },
   {
     id: 'g7',
     category: 'Lodge',
     imageUrl: SAFARI_RECIP,
-    title: ' MAIN DESK'
+    title: ' Main Desk'
   },
   {
     id: 'g8',
     category: 'Lodge',
     imageUrl: SAFARI_OUTDINING,
-    title: 'BEAUTIFUL RESTING AREA'
   },
   {
     id: 'g9',
     category: 'Lodge',
     imageUrl: SAFARI_TOWER,
-    title: 'TOWER OF JUNGLE'
+    title: 'Tower Of Jungle'
   },
   {
     id: 'g10',
     category: 'Lodge',
     imageUrl: SAFARI_TOILET,
-    title: 'ALWAYS CLEAN TOILET'
+    title: 'Always Clean Toilet'
   },
   {
     id: 'g11',
     category: 'Lodge',
     imageUrl: SAFARI_BUILDING,
-    title: 'Majestic Safari Elephant Jungle Crossing'
+    title: 'View'
   },
   {
     id: 'g12',
     category: 'Lodge',
     imageUrl: SAFARI_CHAIR,
-    title: 'Rapti River Canoe Excursion at Golden Sunset'
+    title: 'Sitting area'
   },
 ];
 
