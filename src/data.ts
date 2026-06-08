@@ -1,35 +1,24 @@
 import { Room, Amenity, GalleryItem, Testimonial } from './types';
 
 // Use dynamic asset references so Vite bundles them correctly in production systems like Netlify without needing static PNG type declarations.
-const SAFARI_HERO_LODGE = new URL('./assets/images/Homepage_20260606_231903.png', import.meta.url).href;
-const SAFARI_SINGLE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
-const SAFARI_DINING = new URL('./assets/images/IMG_20260606_214558.png', import.meta.url).href;
-const SAFARI_RHINO = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
-const SAFARI_DOUBLE_ROOM = new URL('./assets/images/Double_bed.png', import.meta.url).href;
-const SAFARI_OUTDINING = new URL('./assets/images/Outdoor_dining.jpg', import.meta.url).href;
-const SAFARI_CHAIR = new URL('./assets/images/Chair.jpg', import.meta.url).href;
-const SAFARI_TOILET = new URL('./assets/images/Toilet.jpeg', import.meta.url).href;
-const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
-const SAFARI_SNAKE = new URL('./assets/images/Snake.jpg', import.meta.url).href;
-const SAFARI_TOURISTDINING = new URL('./assets/images/Tourist_dining.jpg', import.meta.url).href;
-const SAFARI_BOAT = new URL('./assets/images/Boat_1780387231489.jpg', import.meta.url).href;
-const SAFARI_TOWER = new URL('./assets/images/Tower_IMG_1780842806696.jpg', import.meta.url).href;
-const SAFARI_BUILDING = new URL('./assets/images/Building.jpg', import.meta.url).href;
-
+const SAFARI_HERO_LODGE = new URL('./assets/images/safari_courtyard_original.jpg', import.meta.url).href;
+const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
+const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
+const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
 export const ROOMS: Room[] = [
   {
     id: 'luxury-suite',
-    name: 'Single Bedroom Suite',
+    name: 'Luxury Suite',
     description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, premium king-size bedding, and large windows that fill the space with clear natural light.',
     size: '55 m²',
     bedType: '1 Extra-Large King Bed',
     capacity: 2,
     view: 'Lodge Gardens & Forest View',
     priceNpr: 18500,
-    imageUrl: SAFARI_SINGLE_ROOM,
+    imageUrl: SAFARI_SUITE_ROOM,
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -38,14 +27,14 @@ export const ROOMS: Room[] = [
   },
   {
     id: 'deluxe-cottage',
-    name: 'Double Bedroom Suite',
+    name: 'Deluxe Cottage',
     description: 'A cozy and charming standalone cottage that borders our tranquil gardens. This space offers supreme comfort in a highly restful jungle-adjacent atmosphere.',
     size: '45 m²',
     bedType: '1 King Bed or 2 Twin Beds',
     capacity: 2,
     view: 'Resort Courtyard & Garden View',
     priceNpr: 14500,
-    imageUrl: SAFARI_DOUBLE_ROOM,
+    imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -90,45 +79,62 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g1',
     category: 'Lodge & Grounds',
     imageUrl: SAFARI_HERO_LODGE,
+    title: 'Safari Wildlife Lodge & Camp Twilight Vista'
   },
   {
     id: 'g2',
-    category: 'Lodge & Grounds',
-    imageUrl: SAFARI_TOURISTDINING,
-  },
-  {
-    id: 'g3',
-    category: 'Lodge & Grounds',
-    imageUrl: [SAFARI_DINING,
-  },
-  {
-    id: 'g4',
-    category: 'Lodge & Grounds',
-    imageUrl: SAFARI_BOAT,
-  },
-  {
-    id: 'g5',
     category: 'Dining',
-    imageUrl:  SAFARI_OUTDINING,
+    imageUrl: SAFARI_DINING,
+    title: 'Bush Dining & Fine Nepalese Hospitality'
   },
   {
     id: 'g3',
     category: 'Rooms',
-    imageUrls: [SAFARI_SINGLE_ROOM,SAFARI_DOUBLE_ROOM, SAFARI_TOILET],
+    imageUrl: SAFARI_SUITE_ROOM,
     title: 'Safari Luxury Suite Master Bed layout'
   },
   {
     id: 'g4',
     category: 'Wildlife',
-    imageUrls: [SAFARI_RHINO,SAFARI_RHINOS,SAFARI_SNAKE,],
+    imageUrl: SAFARI_RHINO,
     title: 'One-horned Rhino close to Rapti River paths'
   },
   {
     id: 'g5',
     category: 'Lodge & Grounds',
-    imageUrls: [,SAFARI_TOWER,SAFARI_BUILDING,],
-    title: 'Warm Poolside & Relaxing Deck Chairs'
+    imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
+    title: 'Lush Tropical Oasis Pool Side Deck'
   },
+  {
+    id: 'g6',
+    category: 'Wildlife',
+    imageUrl: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80',
+    title: 'Chitwan Birds & Jungle Canopy Excursion'
+  },
+  {
+    id: 'g7',
+    category: 'Wildlife',
+    imageUrl: 'https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80',
+    title: 'Majestic Royal Bengal Tiger on Jungle Patrol'
+  },
+  {
+    id: 'g8',
+    category: 'Lodge & Grounds',
+    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    title: 'Lodge Main Building & Veranda Gardens'
+  },
+  {
+    id: 'g9',
+    category: 'Wildlife',
+    imageUrl: 'https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80',
+    title: 'Chitwan Spotted Deer Grazing at Dawn'
+  },
+  {
+    id: 'g10',
+    category: 'Dining',
+    imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+    title: 'Curated Organic Culinary Dining Tables'
+  }
 ];
 
 export const TESTIMONIALS: Testimonial[] = [

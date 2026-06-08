@@ -84,14 +84,9 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Gallery Filters
-  const [galleryFilter, setGalleryFilter] = useState<string>('All');
+  // Gallery
   const [galleryIndex, setGalleryIndex] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
-
-  useEffect(() => {
-    setGalleryIndex(0);
-  }, [galleryFilter]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -154,10 +149,8 @@ export default function App() {
     localStorage.setItem('safari_bookings', JSON.stringify(updated));
   };
 
-  // Filter gallery items safely
-  const filteredGallery = galleryFilter === 'All'
-    ? GALLERY_ITEMS
-    : GALLERY_ITEMS.filter(item => item.category === galleryFilter);
+  // Gallery items reference
+  const filteredGallery = GALLERY_ITEMS;
 
   const handlePrevGallery = () => {
     if (filteredGallery.length <= 1) return;
@@ -634,7 +627,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* GALLERY SECTION (FILTERABLE GRID) */}
+      {/* GALLERY SECTION (SLIDING CAROUSEL) */}
       <section id="gallery" className="scroll-mt-24 py-24 bg-warm-white relative overflow-hidden">
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
@@ -652,19 +645,6 @@ export default function App() {
             <p className="text-sm text-teal-dark/70">
               Immerse yourself in high-resolution snapshots of local single-horned rhinos, bush dining setups, and wooden master suite structures.
             </p>
-          </div>
-
-          {/* Filtering Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-10 text-xs font-mono tracking-widest uppercase">
-            {['All', 'Lodge & Grounds', 'Dining', 'Rooms', 'Wildlife'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setGalleryFilter(cat)}
-                className={`px-4 py-2 rounded-full border transition-all cursor-pointer ${galleryFilter === cat ? 'bg-teal-dark text-brass border-brass/60 font-semibold' : 'bg-warm-cream text-teal-dark/75 border-transparent hover:bg-brass/25'}`}
-              >
-                {cat}
-              </button>
-            ))}
           </div>
 
           {/* Gallery Items sliding carousel with dynamic layout transitions */}
