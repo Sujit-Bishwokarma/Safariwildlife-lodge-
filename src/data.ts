@@ -4,7 +4,7 @@ import { Room, Amenity, GalleryItem, Testimonial } from './types';
 const SAFARI_HERO_LODGE = new URL('./assets/images/Homepage_20260606_231903.png', import.meta.url).href;
 const SAFARI_SUITE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
 const SAFARI_DOUBLE_BED= new URL('./assets/images/Double_bed.png', import.meta.url).href;
-const SAFARI_BOAT = new URL('./assets/images/Boat.png', import.meta.url).href;
+const SAFARI_BOAT = new URL('./assets/images/Boat11_20260608_175756.png', import.meta.url).href;
 
 // Additional Dynamic Asset References
 const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
