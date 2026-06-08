@@ -2,23 +2,24 @@ import { Room, Amenity, GalleryItem, Testimonial } from './types';
 
 // Use dynamic asset references so Vite bundles them correctly in production systems like Netlify without needing static PNG type declarations.
 const SAFARI_HERO_LODGE = new URL('./assets/images/Homepage_20260606_231903.png', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
+const SAFARI_SINGLE_ROOM = new URL('./assets/images/Single_bed_20260606_214404.png', import.meta.url).href;
 const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
+const SAFARI_DOUBLE_ROOM = new URL('./assets/images/Double_bed.png', import.meta.url).href;
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
 export const ROOMS: Room[] = [
   {
     id: 'luxury-suite',
-    name: 'Luxury Suite',
+    name: 'Single Bedroom Suite',
     description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, premium king-size bedding, and large windows that fill the space with clear natural light.',
     size: '55 m²',
     bedType: '1 Extra-Large King Bed',
     capacity: 2,
     view: 'Lodge Gardens & Forest View',
     priceNpr: 18500,
-    imageUrl: SAFARI_SUITE_ROOM,
+    imageUrl: SAFARI_SINGLE_ROOM,
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -27,14 +28,14 @@ export const ROOMS: Room[] = [
   },
   {
     id: 'deluxe-cottage',
-    name: 'Deluxe Cottage',
+    name: 'Double Bedroom Suite',
     description: 'A cozy and charming standalone cottage that borders our tranquil gardens. This space offers supreme comfort in a highly restful jungle-adjacent atmosphere.',
     size: '45 m²',
     bedType: '1 King Bed or 2 Twin Beds',
     capacity: 2,
     view: 'Resort Courtyard & Garden View',
     priceNpr: 14500,
-    imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: SAFARI_DOUBLE_ROOM
     amenities: [
       'Air Conditioning',
       'Comfort'
