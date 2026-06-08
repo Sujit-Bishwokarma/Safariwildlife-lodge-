@@ -16,6 +16,7 @@ import {
   Check,
   ShieldCheck,
   Award,
+  ChevronLeft,
   ChevronRight,
   Sliders,
   Send,
@@ -32,6 +33,34 @@ import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE } from
 import { Room, BookingSubmission, GalleryItem } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
+
+const slideVariants = {
+  enter: (dir: 'left' | 'right') => ({
+    x: dir === 'right' ? '100%' : '-100%',
+    opacity: 0,
+    scale: 0.95
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: 'spring', stiffness: 300, damping: 30 },
+      opacity: { duration: 0.4 },
+      scale: { duration: 0.4 }
+    }
+  },
+  exit: (dir: 'left' | 'right') => ({
+    x: dir === 'right' ? '-100%' : '100%',
+    opacity: 0,
+    scale: 0.95,
+    transition: {
+      x: { type: 'spring', stiffness: 300, damping: 30 },
+      opacity: { duration: 0.3 },
+      scale: { duration: 0.4 }
+    }
+  })
+};
 
 export default function App() {
   // Booking Modal States
@@ -57,6 +86,12 @@ export default function App() {
 
   // Gallery Filters
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
+  const [galleryIndex, setGalleryIndex] = useState<number>(0);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
+
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [galleryFilter]);
 
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -123,6 +158,18 @@ export default function App() {
   const filteredGallery = galleryFilter === 'All'
     ? GALLERY_ITEMS
     : GALLERY_ITEMS.filter(item => item.category === galleryFilter);
+
+  const handlePrevGallery = () => {
+    if (filteredGallery.length <= 1) return;
+    setSlideDirection('left');
+    setGalleryIndex((prev) => (prev === 0 ? filteredGallery.length - 1 : prev - 1));
+  };
+
+  const handleNextGallery = () => {
+    if (filteredGallery.length <= 1) return;
+    setSlideDirection('right');
+    setGalleryIndex((prev) => (prev === filteredGallery.length - 1 ? 0 : prev + 1));
+  };
 
   // Helper mapping for icon rendering
   const renderAmenityIcon = (iconName: string) => {
@@ -626,37 +673,120 @@ export default function App() {
             ))}
           </div>
 
-          {/* Gallery Items Grid with dynamic layout pop transition */}
-          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence mode="popLayout">
-              {filteredGallery.map((item) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4 }}
-                  key={item.id}
-                  className="group relative h-72 rounded-xl overflow-hidden border border-brass/15 shadow-sm hover:shadow-md transition-all duration-300 bg-teal-dark"
-                >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                    referrerPolicy="no-referrer"
-                  />
-                  
-                  {/* Overlay details */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-teal-dark via-teal-dark/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                    <div className="space-y-1">
-                      <span className="text-xs font-mono uppercase tracking-widest text-brass">{item.category}</span>
-                      <h4 className="font-serif text-xl text-warm-white font-bold">{item.title}</h4>
+          {/* Gallery Items sliding carousel with dynamic layout transitions */}
+          <div className="relative max-w-5xl mx-auto px-4 md:px-12 mb-10 group">
+            
+            {/* Main Interactive Stage */}
+            <div className="relative h-[320px] sm:h-[450px] md:h-[500px] lg:h-[550px] w-full bg-teal-dark/10 rounded-2xl overflow-hidden border border-brass/20 shadow-xl">
+              {filteredGallery.length > 0 ? (
+                <AnimatePresence initial={false} custom={slideDirection} mode="wait">
+                  <motion.div
+                    key={filteredGallery[galleryIndex]?.id || galleryIndex}
+                    custom={slideDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.6}
+                    onDragEnd={(e, { offset }) => {
+                      const swipe = offset.x;
+                      if (swipe < -60) {
+                        handleNextGallery();
+                      } else if (swipe > 60) {
+                        handlePrevGallery();
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none flex flex-col justify-end"
+                  >
+                    {/* Background Slide Image */}
+                    <img
+                      src={filteredGallery[galleryIndex]?.imageUrl}
+                      alt={filteredGallery[galleryIndex]?.title}
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      referrerPolicy="no-referrer"
+                    />
+                    
+                    {/* Multi-layered cinematic overlay shadow */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/95 via-teal-dark/40 to-black/10 pointer-events-none" />
+
+                    {/* Content Details on active slide */}
+                    <div className="relative p-6 sm:p-10 md:p-12 text-warm-white space-y-2 pointer-events-none max-w-xl">
+                      <motion.span 
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="inline-block px-3 py-1 bg-brass text-teal-dark text-[10px] font-mono font-bold uppercase tracking-widest rounded-full"
+                      >
+                        {filteredGallery[galleryIndex]?.category}
+                      </motion.span>
+                      <motion.h3 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                        className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-warm-white"
+                      >
+                        {filteredGallery[galleryIndex]?.title}
+                      </motion.h3>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brass animate-pulse" />
+                        <span className="text-xs font-mono text-warm-white/70 tracking-wider">
+                          Ratnanagar, Chitwan NP
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-teal-dark bg-warm-cream">
+                  <span className="font-mono text-xs">No media found for this category</span>
+                </div>
+              )}
+            </div>
+
+            {/* Slider Navigation Arrows */}
+            {filteredGallery.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevGallery}
+                  className="absolute left-[-16px] md:left-2 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={handleNextGallery}
+                  className="absolute right-[-16px] md:right-2 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                  aria-label="Next Slide"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Indicator Dots & Slide Counter info */}
+            {filteredGallery.length > 1 && (
+              <div className="flex items-center justify-between mt-6 px-2">
+                <span className="text-xs font-mono text-teal-dark/65 font-bold tracking-wide">
+                  {(galleryIndex + 1).toString().padStart(2, '0')} <span className="text-brass">/</span> {filteredGallery.length.toString().padStart(2, '0')}
+                </span>
+                <div className="flex gap-2.5">
+                  {filteredGallery.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSlideDirection(idx > galleryIndex ? 'right' : 'left');
+                        setGalleryIndex(idx);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${idx === galleryIndex ? 'bg-brass w-8 border border-teal-dark/30' : 'bg-teal-dark/20 w-2 hover:bg-teal-dark/50'}`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
         </motion.div>
       </section>
