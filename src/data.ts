@@ -97,7 +97,8 @@ export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g3',
     category: 'Rooms',
-    imageUrl: SAFARI_SUITE_ROOM,
+    imageUrl: SAFARI_SINGLE_ROOM,
+    imageUrl: SAFARI_DOUBLE_ROOM,
     title: 'Safari Luxury Suite Master Bed layout'
   },
   {
