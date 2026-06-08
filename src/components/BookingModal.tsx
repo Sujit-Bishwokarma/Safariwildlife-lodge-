@@ -112,21 +112,38 @@ export default function BookingModal({
       const nativeForm = document.getElementById('bisup-booking-form') as HTMLFormElement | null;
       if (nativeForm) {
         // Set all standard input field values
-        (nativeForm.querySelector('input[name="guestName"]') as HTMLInputElement).value = guestName;
-        (nativeForm.querySelector('input[name="contactValue"]') as HTMLInputElement).value = contactValue;
-        (nativeForm.querySelector('input[name="checkIn"]') as HTMLInputElement).value = checkIn;
-        (nativeForm.querySelector('input[name="checkOut"]') as HTMLInputElement).value = checkOut;
-        (nativeForm.querySelector('input[name="guestsCount"]') as HTMLInputElement).value = guestsCount.toString();
-        (nativeForm.querySelector('input[name="roomName"]') as HTMLInputElement).value = activeRoom?.name || 'Deluxe Room';
-        (nativeForm.querySelector('input[name="totalPricing"]') as HTMLInputElement).value = totalPricing + " NPR";
+        const inputs = {
+          guestName,
+          contactValue,
+          checkIn,
+          checkOut,
+          guestsCount: guestsCount.toString(),
+          roomName: activeRoom?.name || 'Deluxe Room',
+          totalPricing: totalPricing + " NPR"
+        };
 
-        // Request submission natively which invokes all browser events/listeners for Bisup's script
+        Object.entries(inputs).forEach(([key, val]) => {
+          const inputEl = nativeForm.querySelector(`input[name="${key}"]`) as HTMLInputElement | null;
+          if (inputEl) {
+            inputEl.value = val;
+            // Dispatch input and change events so third-party tracking scripts recognize the filled values
+            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+
+        // Trigger a synthetic 'submit' event to simulate actual user clicking submit.
+        // This is necessary because calling form.submit() directly in JS bypasses standard 'submit' event listeners
+        // that form scraping processors like Bisup, Netlify scripts or page scraping analytics hook onto.
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        nativeForm.dispatchEvent(submitEvent);
+
         if (typeof nativeForm.requestSubmit === 'function') {
           nativeForm.requestSubmit();
         } else {
           nativeForm.submit();
         }
-        console.log("Booking successfully submitted natively for Bisup!");
+        console.log("Booking successfully submitted natively and dispatched events for Bisup!");
       }
     } catch (err) {
       console.warn("Native form submit failed, fallback to AJAX:", err);
