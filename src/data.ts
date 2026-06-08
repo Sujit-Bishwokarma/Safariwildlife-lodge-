@@ -77,61 +77,61 @@ export const AMENITIES: Amenity[] = [
 export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'g1',
-    category: 'Lodge & Grounds',
+    category: 'Lodge',
     imageUrl: SAFARI_HERO_LODGE,
     title: 'Safari Wildlife Lodge & Camp Twilight Vista'
   },
   {
     id: 'g2',
-    category: 'Dining',
+    category: 'Lodge',
     imageUrl: SAFARI_DINING,
     title: 'Bush Dining & Fine Nepalese Hospitality'
   },
   {
     id: 'g3',
-    category: 'Rooms',
+    category: 'Lodge',
     imageUrl: SAFARI_SUITE_ROOM,
     title: 'Safari Luxury Suite Master Bed layout'
   },
   {
     id: 'g4',
-    category: 'Wildlife',
+    category: 'Lodge',
     imageUrl: SAFARI_RHINO,
     title: 'One-horned Rhino close to Rapti River paths'
   },
   {
     id: 'g5',
-    category: 'Lodge & Grounds',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
     title: 'Lush Tropical Oasis Pool Side Deck'
   },
   {
     id: 'g6',
-    category: 'Wildlife',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80',
     title: 'Chitwan Birds & Jungle Canopy Excursion'
   },
   {
     id: 'g7',
-    category: 'Wildlife',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80',
     title: 'Majestic Royal Bengal Tiger on Jungle Patrol'
   },
   {
     id: 'g8',
-    category: 'Lodge & Grounds',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
     title: 'Lodge Main Building & Veranda Gardens'
   },
   {
     id: 'g9',
-    category: 'Wildlife',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80',
     title: 'Chitwan Spotted Deer Grazing at Dawn'
   },
   {
     id: 'g10',
-    category: 'Dining',
+    category: 'Lodge',
     imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
     title: 'Curated Organic Culinary Dining Tables'
   }

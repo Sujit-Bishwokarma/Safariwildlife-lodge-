@@ -22,7 +22,7 @@ export interface Amenity {
 
 export interface GalleryItem {
   id: string;
-  category: 'Lodge & Grounds' | 'Dining' | 'Rooms' | 'Wildlife';
+  category: string;
   imageUrl: string;
   title: string;
 }
