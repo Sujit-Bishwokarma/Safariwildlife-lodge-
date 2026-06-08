@@ -10,8 +10,11 @@ const SAFARI_BOAT = new URL('./assets/images/Boat_1780387231489.jpg', import.met
 const SAFARI_RHINOS = new URL('./assets/images/Rhinos_1780146577336.jpg', import.meta.url).href;
 const SAFARI_RHINO = new URL('./assets/images/Rhino-20260606-WA0012.jpg', import.meta.url).href;
 const SAFARI_TOURIST_DINING = new URL('./assets/images/Tourist_dining.jpg', import.meta.url).href;
+const SAFARI_RECIP = new URL('./assets/images/IMG_20260606_214558.png', import.meta.url).href;
+const SAFARI_OUTDINING = new URL('./assets/imagesOutdoor_dining.jpg', import.meta.url).href;
+const SAFARI_TOILET = new URL('./assets/images/Toilet.jpeg', import.meta.url).href;const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_TOWER = new URL('./assets/images/Tower_IMG_1780842806696.jpg', import.meta.url).href;
 
-const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
 const SAFARI_BIRDS_EXCURSION = new URL('https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
 const SAFARI_TIGER_PATROL = new URL('https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
 const SAFARI_VERANDA_GARDENS = new URL('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
@@ -28,29 +31,29 @@ export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 export const ROOMS: Room[] = [
   {
     id: 'luxury-suite',
-    name: 'Luxury Suite',
-    description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, premium king-size bedding, and large windows that fill the space with clear natural light.',
-    size: '55 m²',
-    bedType: '1 Extra-Large King Bed',
+    name: 'Single Bedroom',
+    description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, Windows that fill the space with clear natural light.',
+    size: '30 m²',
+    bedType: '1 Large Bed',
     capacity: 2,
-    view: 'Lodge Gardens & Forest View',
-    priceNpr: 18500,
+    view: 'Lodge Gardens View',
+    priceNpr: 1500,
     imageUrl: SAFARI_SUITE_ROOM,
     amenities: [
       'Air Conditioning',
       'Comfort'
     ],
-    highlight: 'Private balcony overlooking nature'
+    highlight: 'Beautiful overlooking nature'
   },
   {
     id: 'deluxe-cottage',
-    name: 'Deluxe Cottage',
+    name: 'Double Bedroom',
     description: 'A cozy and charming standalone cottage that borders our tranquil gardens. This space offers supreme comfort in a highly restful jungle-adjacent atmosphere.',
     size: '45 m²',
     bedType: '1 King Bed or 2 Twin Beds',
-    capacity: 2,
+    capacity: 3,
     view: 'Resort Courtyard & Garden View',
-    priceNpr: 14500,
+    priceNpr: 1,700,
     imageUrl: SAFARI_DOUBLE_BED,
     amenities: [
       'Air Conditioning',
@@ -102,7 +105,6 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g2',
     category: 'Lodge',
     imageUrl: SAFARI_BOAT,
-    title: 'Bush Dining & Fine Nepalese Hospitality'
   },
   {
     id: 'g3',
@@ -120,37 +122,36 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g5',
     category: 'Lodge',
     imageUrl: SAFARI_RHINOS,
-    title: 'Lush Tropical Oasis Pool Side Deck'
   },
   {
     id: 'g6',
     category: 'Lodge',
     imageUrl: SAFARI_TOURIST_DINING,
-    title: 'Chitwan Birds & Jungle Canopy Excursion'
+    title: 'ENJOYING FOOD'
   },
   {
     id: 'g7',
     category: 'Lodge',
-    imageUrl: SAFARI_TIGER_PATROL,
-    title: 'Majestic Royal Bengal Tiger on Jungle Patrol'
+    imageUrl: SAFARI_RECIP,
+    title: ' MAIN DESK'
   },
   {
     id: 'g8',
     category: 'Lodge',
-    imageUrl: SAFARI_VERANDA_GARDENS,
-    title: 'Lodge Main Building & Veranda Gardens'
+    imageUrl: SAFARI_OUTDINING,
+    title: 'BEAUTIFUL RESTING AREA'
   },
   {
     id: 'g9',
     category: 'Lodge',
-    imageUrl: SAFARI_DEER_DAWN,
-    title: 'Chitwan Spotted Deer Grazing at Dawn'
+    imageUrl: SAFARI_TOWER,
+    title: 'TOWER OF JUNGLE'
   },
   {
     id: 'g10',
     category: 'Lodge',
-    imageUrl: SAFARI_CULINARY_DINING,
-    title: 'Curated Organic Culinary Dining Tables'
+    imageUrl: SAFARI_TOILET,
+    title: 'ALWAYS CLEAN TOILET'
   },
   {
     id: 'g11',
