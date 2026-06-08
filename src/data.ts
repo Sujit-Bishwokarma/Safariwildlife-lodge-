@@ -45,7 +45,7 @@ export const ROOMS: Room[] = [
     capacity: 2,
     view: 'Resort Courtyard & Garden View',
     priceNpr: 14500,
-    imageUrl: SAFARI_DOUBLE_ROOM
+    imageUrl: SAFARI_DOUBLE_ROOM,
     amenities: [
       'Air Conditioning',
       'Comfort'
