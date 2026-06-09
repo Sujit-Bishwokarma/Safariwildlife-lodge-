@@ -82,32 +82,7 @@ export default function BookingModal({
     existingBookings.push(newBooking);
     localStorage.setItem('safari_bookings', JSON.stringify(existingBookings));
 
-    // Submit programmatically to Netlify Forms (Ajax-based static hosting)
-    const encodeFormData = (data: Record<string, string | number>) => {
-      return Object.keys(data)
-        .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(data[key].toString()))
-        .join("&");
-    };
-
-    fetch("/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: encodeFormData({
-        "form-name": "booking-form",
-        "bot-field": "",
-        guestName,
-        contactValue,
-        checkIn,
-        checkOut,
-        guestsCount,
-        roomName: activeRoom?.name || 'Deluxe Room',
-        totalPricing: totalPricing + " NPR"
-      })
-    })
-      .then(() => console.log("Booking successfully submitted via AJAX!"))
-      .catch(error => console.error("Error submitting via AJAX:", error));
-
-    // Submit natively via the hidden form in index.html for Bisup / Static.app form scraping scripts
+    // Submit natively via the hidden form in index.html for Bisup / cPanel form scraping scripts
     try {
       const nativeForm = document.getElementById('bisup-booking-form') as HTMLFormElement | null;
       if (nativeForm) {
@@ -134,7 +109,7 @@ export default function BookingModal({
 
         // Trigger a synthetic 'submit' event to simulate actual user clicking submit.
         // This is necessary because calling form.submit() directly in JS bypasses standard 'submit' event listeners
-        // that form scraping processors like Bisup, Netlify scripts or page scraping analytics hook onto.
+        // that form scraping processors like Bisup or standard cPanel page scraping analytics hook onto.
         const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
         nativeForm.dispatchEvent(submitEvent);
 
@@ -200,11 +175,9 @@ export default function BookingModal({
                 onSubmit={handleSubmit} 
                 className="space-y-4"
                 name="booking-form"
-                data-netlify="true"
-                data-netlify-honeypot="bot-field"
+                data-bisup-form="true"
               >
                 <input type="hidden" name="form-name" value="booking-form" />
-                <input type="hidden" name="bot-field" />
                 <div className="space-y-1 pr-6">
                   <div className="flex items-center gap-1.5 text-brass">
                     <Sparkles className="w-4 h-4" />

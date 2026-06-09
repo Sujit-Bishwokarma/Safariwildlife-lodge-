@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 
 import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE } from './data';
-import { Room, BookingSubmission, GalleryItem } from './types';
+import { Room, BookingSubmission, GalleryItem, Testimonial } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
 
@@ -102,6 +102,18 @@ export default function App() {
     return GALLERY_ITEMS;
   });
 
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_testimonials');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return TESTIMONIALS;
+  });
+
   // Check URL parameter for admin access on load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -152,7 +164,7 @@ export default function App() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   // Admin states & forms
-  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'leads' | 'backup'>('rooms');
+  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'reviews' | 'leads' | 'backup'>('rooms');
   const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
 
   // Room editing/adding form state
@@ -179,6 +191,17 @@ export default function App() {
     title: '',
     category: 'Lodge',
     imageUrl: ''
+  });
+
+  // Reviews editing/adding form state
+  const [editingTestimonialId, setEditingTestimonialId] = useState<string | null>(null);
+  const [testimonialForm, setTestimonialForm] = useState<Partial<Testimonial>>({
+    id: '',
+    name: '',
+    origin: '',
+    rating: 5,
+    comment: '',
+    date: ''
   });
 
   // Guest inquiries/leads list inside admin panel
@@ -337,6 +360,63 @@ export default function App() {
     }
   };
 
+  // Admin Reviews/Testimonials Handlers
+  const startEditTestimonial = (test: Testimonial) => {
+    setEditingTestimonialId(test.id);
+    setTestimonialForm({ ...test });
+  };
+
+  const startAddTestimonial = () => {
+    setEditingTestimonialId('new');
+    const today = new Date();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const currentMonthYear = `${months[today.getMonth()]} ${today.getFullYear()}`;
+    
+    setTestimonialForm({
+      id: 't-' + Date.now(),
+      name: '',
+      origin: '',
+      rating: 5,
+      comment: '',
+      date: currentMonthYear
+    });
+  };
+
+  const saveTestimonial = () => {
+    if (!testimonialForm.name || !testimonialForm.comment) {
+      triggerAdminStatus('⚠️ Please fill in at least the guest Name and Comment/Review!');
+      return;
+    }
+    const finalTest: Testimonial = {
+      id: testimonialForm.id || 't-' + Date.now(),
+      name: testimonialForm.name,
+      origin: testimonialForm.origin || 'Visitor',
+      rating: Number(testimonialForm.rating) || 5,
+      comment: testimonialForm.comment,
+      date: testimonialForm.date || 'Lodge Guest'
+    };
+
+    let updated: Testimonial[];
+    if (editingTestimonialId === 'new') {
+      updated = [...testimonials, finalTest];
+      triggerAdminStatus('🎉 New Guest Review added!');
+    } else {
+      updated = testimonials.map(item => item.id === editingTestimonialId ? finalTest : item);
+      triggerAdminStatus('✏️ Guest Review updated!');
+    }
+
+    setTestimonials(updated);
+    localStorage.setItem('safari_dynamic_testimonials', JSON.stringify(updated));
+    setEditingTestimonialId(null);
+  };
+
+  const deleteTestimonial = (id: string) => {
+    const updated = testimonials.filter(item => item.id !== id);
+    setTestimonials(updated);
+    localStorage.setItem('safari_dynamic_testimonials', JSON.stringify(updated));
+    triggerAdminStatus('🗑️ Guest Review removed!');
+  };
+
   // Lead Control Handlers
   const deleteEnquiry = (id: string) => {
     const saved = localStorage.getItem('safari_enquiries');
@@ -364,13 +444,16 @@ export default function App() {
   };
 
   const resetToFactoryDefaults = () => {
-    if (window.confirm('Wipe dynamically updated suites and images? This restores the factory default state.')) {
+    if (window.confirm('Wipe dynamically updated suites, images, and reviews? This restores the factory default state.')) {
       localStorage.removeItem('safari_dynamic_rooms');
       localStorage.removeItem('safari_dynamic_gallery');
+      localStorage.removeItem('safari_dynamic_testimonials');
       setRooms(ROOMS);
       setGalleryItems(GALLERY_ITEMS);
+      setTestimonials(TESTIMONIALS);
       setEditingRoomId(null);
       setEditingGalleryId(null);
+      setEditingTestimonialId(null);
       triggerAdminStatus('🔄 Lodge database restored to default static templates.');
     }
   };
@@ -380,6 +463,7 @@ export default function App() {
     const backupObj = {
       rooms,
       galleryItems,
+      testimonials,
       activeBookings,
       enquiries
     };
@@ -415,6 +499,11 @@ export default function App() {
           if (Array.isArray(parsed.galleryItems)) {
             setGalleryItems(parsed.galleryItems);
             localStorage.setItem('safari_dynamic_gallery', JSON.stringify(parsed.galleryItems));
+            hasUpdated = true;
+          }
+          if (Array.isArray(parsed.testimonials)) {
+            setTestimonials(parsed.testimonials);
+            localStorage.setItem('safari_dynamic_testimonials', JSON.stringify(parsed.testimonials));
             hasUpdated = true;
           }
           if (Array.isArray(parsed.activeBookings)) {
@@ -1144,7 +1233,7 @@ export default function App() {
 
           {/* Testimonial Cards Slider/Block */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((test, idx) => (
+            {testimonials.map((test, idx) => (
               <motion.div 
                 key={test.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -1608,11 +1697,12 @@ export default function App() {
 
             {/* Tab Nav */}
             <div className="bg-zinc-900/60 px-6 py-2 border-b border-zinc-800 flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0">
-              {(['rooms', 'gallery', 'leads', 'backup'] as const).map((tab) => {
+              {(['rooms', 'gallery', 'reviews', 'leads', 'backup'] as const).map((tab) => {
                 const isActive = adminTab === tab;
                 const labels = {
                   rooms: '🏨 Manage Suites',
                   gallery: '🖼️ Manage Gallery Slider',
+                  reviews: '⭐ Manage Reviews',
                   leads: '🗳️ Guest Leads & Enquiries',
                   backup: '⚙️ JSON Backup System'
                 };
@@ -1928,6 +2018,159 @@ export default function App() {
                                 Remove
                               </button>
                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {adminTab === 'reviews' && (
+                  <motion.div
+                    key="reviews"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded border border-zinc-800">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Guest Reviews & Testimonials ({testimonials.length})</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Manage unedited guest memoirs featured on the main landing page slider.</p>
+                      </div>
+                      <button
+                        onClick={startAddTestimonial}
+                        className="px-3.5 py-2 bg-brass text-teal-dark hover:bg-brass-light font-bold text-xs font-mono uppercase tracking-widest rounded flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 font-bold" />
+                        Add New Review
+                      </button>
+                    </div>
+
+                    {editingTestimonialId !== null ? (
+                      <div className="bg-zinc-900/80 p-6 rounded border border-brass/35 space-y-4 max-w-2xl">
+                        <h5 className="font-bold text-brass uppercase tracking-widest font-mono text-xs">
+                          {editingTestimonialId === 'new' ? '⭐ ADD GUEST TESTIMONIAL' : '✏️ EDIT GUEST TESTIMONIAL'}
+                        </h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Guest Name</label>
+                            <input
+                              type="text"
+                              value={testimonialForm.name}
+                              onChange={(e) => setTestimonialForm({ ...testimonialForm, name: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-650 focus:border-brass focus:outline-none"
+                              placeholder="e.g. Abhishek Shrestha"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Origin / Location</label>
+                            <input
+                              type="text"
+                              value={testimonialForm.origin}
+                              onChange={(e) => setTestimonialForm({ ...testimonialForm, origin: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-650 focus:border-brass focus:outline-none"
+                              placeholder="e.g. Kathmandu, Nepal"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Rating Stars (1 - 5)</label>
+                            <select
+                              value={testimonialForm.rating}
+                              onChange={(e) => setTestimonialForm({ ...testimonialForm, rating: Number(e.target.value) })}
+                              className="w-full bg-zinc-950 border border-zinc-805 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono"
+                            >
+                              <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                              <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
+                              <option value={3}>⭐⭐⭐ (3 Stars)</option>
+                              <option value={2}>⭐⭐ (2 Stars)</option>
+                              <option value={1}>⭐ (1 Star)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Date Published</label>
+                            <input
+                              type="text"
+                              value={testimonialForm.date}
+                              onChange={(e) => setTestimonialForm({ ...testimonialForm, date: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="e.g. May 2026"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Testimonial Comment</label>
+                            <textarea
+                              value={testimonialForm.comment}
+                              onChange={(e) => setTestimonialForm({ ...testimonialForm, comment: e.target.value })}
+                              rows={3}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-650 focus:border-brass focus:outline-none"
+                              placeholder="Write the guest review here..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={saveTestimonial}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Save Review
+                          </button>
+                          <button
+                            onClick={() => setEditingTestimonialId(null)}
+                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Testimonials List Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {testimonials.map((test) => (
+                        <div key={test.id} className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 flex flex-col justify-between space-y-3">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h5 className="font-serif text-sm font-bold text-zinc-100">{test.name}</h5>
+                                <span className="text-[10px] text-zinc-400 font-mono block">{test.origin}</span>
+                              </div>
+                              <span className="text-[10px] text-brass font-mono bg-brass/10 border border-brass/20 px-1.5 py-0.5 rounded shrink-0">
+                                {test.date}
+                              </span>
+                            </div>
+
+                            {/* Ratings */}
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: test.rating || 5 }).map((_, i) => (
+                                <Star key={i} className="w-3 h-3 text-brass fill-brass" />
+                              ))}
+                            </div>
+
+                            <p className="text-[11.5px] text-zinc-300 italic leading-relaxed line-clamp-4">
+                              "{test.comment}"
+                            </p>
+                          </div>
+
+                          <div className="flex gap-3 pt-2.5 border-t border-zinc-804/60 mt-auto">
+                            <button
+                              onClick={() => startEditTestimonial(test)}
+                              className="text-xs text-brass hover:text-white font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              Edit Review
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete review from ${test.name}?`)) {
+                                  deleteTestimonial(test.id);
+                                }
+                              }}
+                              className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors cursor-pointer boder-none bg-transparent ml-auto"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </button>
                           </div>
                         </div>
                       ))}

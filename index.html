@@ -9,8 +9,8 @@
     <!-- Hidden frame to prevent page refresh on native submit of booking form in JS-based SPAs -->
     <iframe name="form-submit-iframe" id="form-submit-iframe" style="display: none;"></iframe>
 
-    <!-- Hidden form wrapper for Netlify and Bisup Form recognition and processing.
-         We keep it in an active layout boundary so that third-party scripts and crawler engines can easily find and scrape it. -->
+    <!-- Hidden form wrapper for Bisup Form recognition and processing on cPanel-based web hosting.
+         We keep it in an active layout boundary so that third-party form engines and scraper tools can easily process it. -->
     <div style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); opacity: 0; pointer-events: none; z-index: -9999;">
       <form 
         id="bisup-booking-form"
@@ -18,12 +18,9 @@
         method="POST" 
         action="" 
         target="form-submit-iframe"
-        data-netlify="true" 
         data-bisup-form="true"
-        netlify-honeypot="bot-field"
       >
         <input type="hidden" name="form-name" value="booking-form" />
-        <input type="hidden" name="bot-field" />
         <input type="text" name="guestName" id="bisup_guestName" />
         <input type="text" name="contactValue" id="bisup_contactValue" />
         <input type="text" name="checkIn" id="bisup_checkIn" />
