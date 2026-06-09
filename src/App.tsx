@@ -26,7 +26,17 @@ import {
   Grid,
   MessageCircle,
   Menu,
-  X
+  X,
+  Trash2,
+  Plus,
+  Edit3,
+  Download,
+  Upload,
+  Unlock,
+  Settings,
+  Database,
+  RefreshCw,
+  History
 } from 'lucide-react';
 
 import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE } from './data';
@@ -63,6 +73,53 @@ const slideVariants = {
 };
 
 export default function App() {
+  // Admin Token & Control Panel state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+
+  // Dynamic state loaded on mount, using local storage or fallback to static data
+  const [rooms, setRooms] = useState<Room[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_rooms');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return ROOMS;
+  });
+
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_gallery');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return GALLERY_ITEMS;
+  });
+
+  // Check URL parameter for admin access on load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') {
+      localStorage.setItem('safari_admin_token', 'true');
+      setIsAdmin(true);
+      setIsAdminPanelOpen(true);
+      // Clean query parameter from URL bar
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
+    } else {
+      const savedToken = localStorage.getItem('safari_admin_token');
+      if (savedToken === 'true') {
+        setIsAdmin(true);
+      }
+    }
+  }, []);
+
   // Booking Modal States
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedRoomForBooking, setSelectedRoomForBooking] = useState<Room | null>(null);
@@ -93,6 +150,306 @@ export default function App() {
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [contactSuccess, setContactSuccess] = useState(false);
+
+  // Admin states & forms
+  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'leads' | 'backup'>('rooms');
+  const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
+
+  // Room editing/adding form state
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [roomForm, setRoomForm] = useState<Partial<Room>>({
+    id: '',
+    name: '',
+    description: '',
+    size: '50 m²',
+    bedType: '1 Extra-Large King Bed',
+    capacity: 2,
+    view: 'Jungle & River View',
+    priceNpr: 15000,
+    imageUrl: '',
+    amenities: [],
+    highlight: ''
+  });
+  const [roomAmenityInput, setRoomAmenityInput] = useState('');
+
+  // Gallery editing/adding form state
+  const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
+  const [galleryForm, setGalleryForm] = useState<Partial<GalleryItem>>({
+    id: '',
+    title: '',
+    category: 'Lodge',
+    imageUrl: ''
+  });
+
+  // Guest inquiries/leads list inside admin panel
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      const savedEnq = localStorage.getItem('safari_enquiries');
+      if (savedEnq) {
+        try {
+          setEnquiries(JSON.parse(savedEnq));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [isAdmin, isAdminPanelOpen]);
+
+  const refreshEnquiries = () => {
+    const savedEnq = localStorage.getItem('safari_enquiries');
+    if (savedEnq) {
+      try {
+        setEnquiries(JSON.parse(savedEnq));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setEnquiries([]);
+    }
+  };
+
+  const triggerAdminStatus = (msg: string) => {
+    setAdminStatusMsg(msg);
+    setTimeout(() => {
+      setAdminStatusMsg(null);
+    }, 4500);
+  };
+
+  // Admin Suite Handlers
+  const startEditRoom = (room: Room) => {
+    setEditingRoomId(room.id);
+    setRoomForm({ ...room });
+    setRoomAmenityInput(room.amenities.join(', '));
+  };
+
+  const startAddRoom = () => {
+    setEditingRoomId('new');
+    setRoomForm({
+      id: 'room-' + Date.now(),
+      name: '',
+      description: '',
+      size: '50 m²',
+      bedType: '1 Extra-Large King Bed',
+      capacity: 2,
+      view: 'Lodge Gardens & Forest View',
+      priceNpr: 15000,
+      imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+      amenities: ['Air Conditioning', 'Comfort'],
+      highlight: 'Eco-Luxury sanctuary'
+    });
+    setRoomAmenityInput('Air Conditioning, Comfort');
+  };
+
+  const saveRoom = () => {
+    if (!roomForm.name || !roomForm.priceNpr) {
+      triggerAdminStatus('⚠️ Please fill in at least room Name and Price!');
+      return;
+    }
+    const finalRoom: Room = {
+      id: roomForm.id || 'room-' + Date.now(),
+      name: roomForm.name,
+      description: roomForm.description || '',
+      size: roomForm.size || '50 m²',
+      bedType: roomForm.bedType || '1 King Bed',
+      capacity: Number(roomForm.capacity) || 2,
+      view: roomForm.view || 'Jungle View',
+      priceNpr: Number(roomForm.priceNpr) || 12000,
+      imageUrl: roomForm.imageUrl || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+      amenities: roomAmenityInput.split(',').map(s => s.trim()).filter(Boolean),
+      highlight: roomForm.highlight || 'Luxury guaranteed'
+    };
+
+    let updatedRooms: Room[];
+    if (editingRoomId === 'new') {
+      updatedRooms = [...rooms, finalRoom];
+      triggerAdminStatus('🎉 New Suite successfully added!');
+    } else {
+      updatedRooms = rooms.map(r => r.id === editingRoomId ? finalRoom : r);
+      triggerAdminStatus('✏️ Suite successfully updated!');
+    }
+
+    setRooms(updatedRooms);
+    localStorage.setItem('safari_dynamic_rooms', JSON.stringify(updatedRooms));
+    setEditingRoomId(null);
+  };
+
+  const deleteRoom = (id: string) => {
+    const updatedRooms = rooms.filter(r => r.id !== id);
+    setRooms(updatedRooms);
+    localStorage.setItem('safari_dynamic_rooms', JSON.stringify(updatedRooms));
+    triggerAdminStatus('🗑️ Suite removed from database!');
+    if (selectedRoomForBooking?.id === id) {
+      setSelectedRoomForBooking(null);
+    }
+  };
+
+  // Admin Gallery Handlers
+  const startEditGallery = (item: GalleryItem) => {
+    setEditingGalleryId(item.id);
+    setGalleryForm({ ...item });
+  };
+
+  const startAddGallery = () => {
+    setEditingGalleryId('new');
+    setGalleryForm({
+      id: 'g-' + Date.now(),
+      title: '',
+      category: 'Lodge',
+      imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+    });
+  };
+
+  const saveGallery = () => {
+    if (!galleryForm.title || !galleryForm.imageUrl) {
+      triggerAdminStatus('⚠️ Please fill in both title and image URL');
+      return;
+    }
+    const finalItem: GalleryItem = {
+      id: galleryForm.id || 'g-' + Date.now(),
+      title: galleryForm.title,
+      category: galleryForm.category || 'Lodge',
+      imageUrl: galleryForm.imageUrl
+    };
+
+    let updated: GalleryItem[];
+    if (editingGalleryId === 'new') {
+      updated = [...galleryItems, finalItem];
+      triggerAdminStatus('🎉 New Gallery image added!');
+    } else {
+      updated = galleryItems.map(item => item.id === editingGalleryId ? finalItem : item);
+      triggerAdminStatus('✏️ Gallery image details updated!');
+    }
+
+    setGalleryItems(updated);
+    localStorage.setItem('safari_dynamic_gallery', JSON.stringify(updated));
+    setEditingGalleryId(null);
+  };
+
+  const deleteGalleryItem = (id: string) => {
+    const updated = galleryItems.filter(item => item.id !== id);
+    setGalleryItems(updated);
+    localStorage.setItem('safari_dynamic_gallery', JSON.stringify(updated));
+    triggerAdminStatus('🗑️ Gallery item deleted!');
+    if (galleryIndex >= updated.length) {
+      setGalleryIndex(0);
+    }
+  };
+
+  // Lead Control Handlers
+  const deleteEnquiry = (id: string) => {
+    const saved = localStorage.getItem('safari_enquiries');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((enq: any) => enq.id !== id);
+        localStorage.setItem('safari_enquiries', JSON.stringify(filtered));
+        setEnquiries(filtered);
+        triggerAdminStatus('🗑️ Enquiry lead deleted!');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const clearAllLeads = () => {
+    if (window.confirm('Delete all device bookings & contact form enquiries?')) {
+      localStorage.removeItem('safari_bookings');
+      localStorage.removeItem('safari_enquiries');
+      setActiveBookings([]);
+      setEnquiries([]);
+      triggerAdminStatus('🗑️ All simulation Leads successfully cleared!');
+    }
+  };
+
+  const resetToFactoryDefaults = () => {
+    if (window.confirm('Wipe dynamically updated suites and images? This restores the factory default state.')) {
+      localStorage.removeItem('safari_dynamic_rooms');
+      localStorage.removeItem('safari_dynamic_gallery');
+      setRooms(ROOMS);
+      setGalleryItems(GALLERY_ITEMS);
+      setEditingRoomId(null);
+      setEditingGalleryId(null);
+      triggerAdminStatus('🔄 Lodge database restored to default static templates.');
+    }
+  };
+
+  // JSON Import/Export Backup
+  const downloadBackupBytes = () => {
+    const backupObj = {
+      rooms,
+      galleryItems,
+      activeBookings,
+      enquiries
+    };
+    const jsonStr = JSON.stringify(backupObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `safari_lodge_database_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    triggerAdminStatus('📥 Backup downloaded successfully!');
+  };
+
+  const handleJSONUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed && typeof parsed === 'object') {
+          let hasUpdated = false;
+
+          if (Array.isArray(parsed.rooms)) {
+            setRooms(parsed.rooms);
+            localStorage.setItem('safari_dynamic_rooms', JSON.stringify(parsed.rooms));
+            hasUpdated = true;
+          }
+          if (Array.isArray(parsed.galleryItems)) {
+            setGalleryItems(parsed.galleryItems);
+            localStorage.setItem('safari_dynamic_gallery', JSON.stringify(parsed.galleryItems));
+            hasUpdated = true;
+          }
+          if (Array.isArray(parsed.activeBookings)) {
+            setActiveBookings(parsed.activeBookings);
+            localStorage.setItem('safari_bookings', JSON.stringify(parsed.activeBookings));
+            hasUpdated = true;
+          }
+          if (Array.isArray(parsed.enquiries)) {
+            setEnquiries(parsed.enquiries);
+            localStorage.setItem('safari_enquiries', JSON.stringify(parsed.enquiries));
+            hasUpdated = true;
+          }
+
+          if (hasUpdated) {
+            triggerAdminStatus('📥 Lodge database successfully bulk restored!');
+          } else {
+            triggerAdminStatus('⚠️ File parsed but no recognized arrays (rooms, galleryItems, etc.) found.');
+          }
+        } else {
+          triggerAdminStatus('⚠️ Invalid format. File must be a valid JSON object.');
+        }
+      } catch (err) {
+        console.error(err);
+        triggerAdminStatus('⚠️ File upload parsing error.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const lockConsole = () => {
+    localStorage.removeItem('safari_admin_token');
+    setIsAdmin(false);
+    setIsAdminPanelOpen(false);
+  };
 
   // Load existing Bookings on load
   useEffect(() => {
@@ -150,7 +507,7 @@ export default function App() {
   };
 
   // Gallery items reference
-  const filteredGallery = GALLERY_ITEMS;
+  const filteredGallery = galleryItems;
 
   const handlePrevGallery = () => {
     if (filteredGallery.length <= 1) return;
@@ -472,7 +829,7 @@ export default function App() {
 
           {/* Rooms Grid Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
-            {ROOMS.map((room, idx) => (
+            {rooms.map((room, idx) => (
               <motion.div 
                 key={room.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -681,6 +1038,9 @@ export default function App() {
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                       referrerPolicy="no-referrer"
                     />
+                    
+                    {/* Multi-layered cinematic overlay shadow */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/95 via-teal-dark/40 to-black/10 pointer-events-none" />
 
                     {/* Content Details on active slide */}
                     <div className="relative p-6 sm:p-10 md:p-12 text-warm-white space-y-2 pointer-events-none max-w-xl">
@@ -1064,7 +1424,7 @@ export default function App() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         selectedRoom={selectedRoomForBooking}
-        rooms={ROOMS}
+        rooms={rooms}
         onBookingSuccess={handleBookingSuccess}
       />
 
@@ -1171,6 +1531,567 @@ export default function App() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ADMIN LAUNCH BUTTON */}
+      {isAdmin && (
+        <div className="fixed bottom-6 left-6 z-40 flex flex-col items-end gap-2 pointer-events-auto">
+          <button
+            onClick={() => {
+              setIsAdminPanelOpen(prev => !prev);
+              refreshEnquiries();
+            }}
+            className="flex items-center gap-2 bg-zinc-950 text-white hover:text-brass hover:bg-zinc-900 px-4 py-2.5 rounded-full border border-brass/45 hover:border-brass/80 shadow-2xl transition-all font-mono text-[10px] uppercase font-bold tracking-widest cursor-pointer group"
+          >
+            <Settings className="w-3.5 h-3.5 text-brass group-hover:rotate-45 transition-transform" />
+            <span>cPanel {!isAdminPanelOpen ? 'Open' : 'Close'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* ADMIN PANEL DRAWER */}
+      <AnimatePresence>
+        {isAdmin && isAdminPanelOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-x-0 bottom-0 top-12 sm:top-24 bg-zinc-950 text-zinc-100 border-t border-brass/50 z-50 flex flex-col shadow-2xl overflow-hidden font-sans rounded-t-2xl max-w-7xl mx-auto"
+          >
+            {/* cPanel Header */}
+            <div className="bg-zinc-900 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <Database className="w-6 h-6 text-brass" />
+                <div>
+                  <h3 className="font-serif text-lg font-bold tracking-wider text-brass">
+                    Safari Wildlife cPanel
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-400">
+                    Live System Console Connection: <span className="text-emerald-400 font-bold">ACTIVE LOCAL STORAGE STORAGE ENGINE</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Indicator popup if active */}
+              {adminStatusMsg && (
+                <div className="bg-brass/20 border border-brass/40 text-brass text-xs px-3 py-1.5 rounded font-mono animate-pulse">
+                  {adminStatusMsg}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={resetToFactoryDefaults}
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 hover:text-white border border-zinc-700 rounded text-[11px] font-mono flex items-center gap-1.5 transition cursor-pointer"
+                  title="Wipe modifications and load default rooms/gallery template"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Reset templates
+                </button>
+                <button
+                  onClick={lockConsole}
+                  className="px-3 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-red-200 border border-red-900/40 rounded text-[11px] font-mono flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Lock Console (Sign Out)
+                </button>
+                <button
+                  onClick={() => setIsAdminPanelOpen(false)}
+                  className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white cursor-pointer ml-2"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Nav */}
+            <div className="bg-zinc-900/60 px-6 py-2 border-b border-zinc-800 flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0">
+              {(['rooms', 'gallery', 'leads', 'backup'] as const).map((tab) => {
+                const isActive = adminTab === tab;
+                const labels = {
+                  rooms: '🏨 Manage Suites',
+                  gallery: '🖼️ Manage Gallery Slider',
+                  leads: '🗳️ Guest Leads & Enquiries',
+                  backup: '⚙️ JSON Backup System'
+                };
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => {
+                      setAdminTab(tab);
+                      if (tab === 'leads') refreshEnquiries();
+                    }}
+                    className={`px-4 py-2 rounded font-mono text-xs uppercase tracking-wider font-bold transition cursor-pointer shrink-0 ${
+                      isActive 
+                        ? 'bg-brass text-teal-dark font-black' 
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40'
+                    }`}
+                  >
+                    {labels[tab]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Scrollable Database workspace */}
+            <div className="flex-1 p-6 overflow-y-auto bg-zinc-950 text-sm">
+              <AnimatePresence mode="wait">
+                {adminTab === 'rooms' && (
+                  <motion.div
+                    key="rooms"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded border border-zinc-800">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Live Active Accommodations ({rooms.length})</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Changes instantly update listing views, rates, and search outcomes.</p>
+                      </div>
+                      <button
+                        onClick={startAddRoom}
+                        className="px-3.5 py-2 bg-brass text-teal-dark hover:bg-brass-light font-bold text-xs font-mono uppercase tracking-widest rounded flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 font-bold" />
+                        Add New Room
+                      </button>
+                    </div>
+
+                    {editingRoomId !== null ? (
+                      <div className="bg-zinc-900/80 p-6 rounded border border-brass/35 space-y-4 max-w-3xl">
+                        <h5 className="font-bold text-brass uppercase tracking-widest font-mono text-xs">
+                          {editingRoomId === 'new' ? '✨ CREATE NEW LUXURY SUITE' : '✏️ EDIT ACTIVE SUITE DETAILS'}
+                        </h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Room ID (Immutable/Auto)</label>
+                            <input
+                              type="text"
+                              value={roomForm.id}
+                              disabled={editingRoomId !== 'new'}
+                              onChange={(e) => setRoomForm({ ...roomForm, id: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-805 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 disabled:opacity-50"
+                              placeholder="luxury-suite"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Room Name</label>
+                            <input
+                              type="text"
+                              value={roomForm.name}
+                              onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass focus:outline-none"
+                              placeholder="e.g. Royal Canopy Forest Suite"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Description</label>
+                            <textarea
+                              value={roomForm.description}
+                              onChange={(e) => setRoomForm({ ...roomForm, description: e.target.value })}
+                              rows={3}
+                              className="w-full bg-zinc-950 border border-zinc-855 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-650 focus:border-brass focus:outline-none"
+                              placeholder="Description details..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Price (NPR / Night)</label>
+                            <input
+                              type="number"
+                              value={roomForm.priceNpr}
+                              onChange={(e) => setRoomForm({ ...roomForm, priceNpr: Number(e.target.value) })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Featured Highlight Tag</label>
+                            <input
+                              type="text"
+                              value={roomForm.highlight}
+                              onChange={(e) => setRoomForm({ ...roomForm, highlight: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-855 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="Private balcony overviewing nature"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Room Size (m²)</label>
+                            <input
+                              type="text"
+                              value={roomForm.size}
+                              onChange={(e) => setRoomForm({ ...roomForm, size: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="e.g. 55 m²"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Bed Configuration</label>
+                            <input
+                              type="text"
+                              value={roomForm.bedType}
+                              onChange={(e) => setRoomForm({ ...roomForm, bedType: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="1 Extra-Large King Bed"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Amenities (comma separated list)</label>
+                            <input
+                              type="text"
+                              value={roomAmenityInput}
+                              onChange={(e) => setRoomAmenityInput(e.target.value)}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="Air Conditioning, Free Wi-Fi, Forest View, Private Jacuzzi"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Capacity (Adults count)</label>
+                            <input
+                              type="number"
+                              value={roomForm.capacity}
+                              onChange={(e) => setRoomForm({ ...roomForm, capacity: Number(e.target.value) })}
+                              className="w-full bg-zinc-950 border border-zinc-855 text-zinc-100 focus:border-brass focus:outline-none"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Suite Picture URL</label>
+                            <input
+                              type="text"
+                              value={roomForm.imageUrl}
+                              onChange={(e) => setRoomForm({ ...roomForm, imageUrl: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                              placeholder="https://images.unsplash.com/..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={saveRoom}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Save Suite Entry
+                          </button>
+                          <button
+                            onClick={() => setEditingRoomId(null)}
+                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Room Grid Table */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {rooms.map((room) => (
+                        <div key={room.id} className="bg-zinc-900/50 rounded p-4 border border-zinc-800 flex gap-4">
+                          <img
+                            src={room.imageUrl}
+                            alt={room.name}
+                            className="w-24 h-24 object-cover rounded border border-zinc-800 bg-zinc-950"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <h5 className="font-serif text-sm font-bold text-zinc-100">{room.name}</h5>
+                                <span className="font-mono text-[10px] text-brass uppercase leading-none bg-brass/10 border border-brass/20 px-1.5 py-0.5 rounded shrink-0">
+                                  Rs {room.priceNpr.toLocaleString('en-NP')}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-relaxed">{room.description}</p>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                              <button
+                                onClick={() => startEditRoom(room)}
+                                className="text-xs text-brass hover:text-white font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                Edit Suite
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete ${room.name}?`)) {
+                                    deleteRoom(room.id);
+                                  }
+                                }}
+                                className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors cursor-pointer ml-auto"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {adminTab === 'gallery' && (
+                  <motion.div
+                    key="gallery"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded border border-zinc-800">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Lodge Image Gallery Items ({galleryItems.length})</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono font-normal">Controls photos circulating in the main slider. Add authentic Nepalese wilderness assets.</p>
+                      </div>
+                      <button
+                        onClick={startAddGallery}
+                        className="px-3.5 py-2 bg-brass text-teal-dark hover:bg-brass-light font-bold text-xs font-mono uppercase tracking-widest rounded flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 font-bold" />
+                        Add Gallery Image
+                      </button>
+                    </div>
+
+                    {editingGalleryId !== null ? (
+                      <div className="bg-zinc-900/80 p-5 rounded border border-brass/35 space-y-4 max-w-xl">
+                        <h5 className="font-bold text-brass uppercase tracking-widest font-mono text-xs">
+                          {editingGalleryId === 'new' ? '🖼️ ADD IMAGE TO SLIDER' : '✏️ EDIT IMAGE DETAILS'}
+                        </h5>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Image Title / Description</label>
+                            <input
+                              type="text"
+                              value={galleryForm.title}
+                              onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none"
+                              placeholder="e.g. Royal Bengal Tiger on Raptor River shore"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Image URL Address</label>
+                            <input
+                              type="text"
+                              value={galleryForm.imageUrl}
+                              onChange={(e) => setGalleryForm({ ...galleryForm, imageUrl: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                              placeholder="https://images.unsplash.com/..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={saveGallery}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Save Image
+                          </button>
+                          <button
+                            onClick={() => setEditingGalleryId(null)}
+                            className="px-4 py-2 bg-zinc-805 hover:bg-zinc-700 text-zinc-350 font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Gallery grid visualizer */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {galleryItems.map((item) => (
+                        <div key={item.id} className="bg-zinc-900/40 rounded border border-zinc-850 p-2 group flex flex-col justify-between">
+                          <div className="relative aspect-video rounded overflow-hidden bg-zinc-950 mb-2">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <div className="space-y-2 flex-1 flex flex-col justify-between">
+                            <p className="text-[11px] text-zinc-200 line-clamp-1 truncate font-mono" title={item.title}>
+                              {item.title}
+                            </p>
+                            <div className="flex gap-2 pt-1.5 border-t border-zinc-800/60 mt-auto">
+                              <button
+                                onClick={() => startEditGallery(item)}
+                                className="text-[10px] text-brass hover:text-white font-bold flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <Edit3 className="w-2.5 h-2.5" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteGalleryItem(item.id)}
+                                className="text-[10px] text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5 cursor-pointer ml-auto"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {adminTab === 'leads' && (
+                  <motion.div
+                    key="leads"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded border border-zinc-805">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Admin Lead Dashboard (Leads & Reservation Database)</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Consolidated logs of submissions made via the suite checkout wizard and contact forms.</p>
+                      </div>
+                      <button
+                        onClick={clearAllLeads}
+                        className="px-3.5 py-1.5 bg-red-950/40 hover:bg-red-900/50 text-red-200 border border-red-900/50 hover:text-white rounded text-xs font-mono uppercase tracking-widest cursor-pointer font-bold"
+                      >
+                        Clear All Logs
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {/* Active Reservations */}
+                      <div className="space-y-3">
+                        <div className="bg-zinc-900 px-4 py-2 border border-zinc-800 rounded flex justify-between items-center">
+                          <span className="font-serif text-sm font-bold text-brass flex items-center gap-1.5">
+                            🏨 Suite Bookings ({activeBookings.length})
+                          </span>
+                        </div>
+
+                        {activeBookings.length === 0 ? (
+                          <div className="bg-zinc-900/20 text-center py-12 rounded border border-zinc-950">
+                            <p className="font-mono text-xs text-zinc-500">No bookings logged on this device yet.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {activeBookings.map((bk) => (
+                              <div key={bk.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded relative group">
+                                <span className="absolute top-3 right-4 font-mono text-[9px] text-emerald-400 border border-emerald-400/30 px-1 rounded uppercase bg-emerald-400/5">
+                                  CONFIRMED
+                                </span>
+                                <h5 className="font-bold text-zinc-200 font-mono text-xs select-all">Booking ID: {bk.id}</h5>
+                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-850 text-xs text-zinc-400 font-mono">
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Guest:</span> <strong className="text-white">{bk.guestName}</strong></p>
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Suite Selected:</span> <strong className="text-brass">{bk.roomName}</strong></p>
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Contact No:</span> <strong className="text-zinc-300">{bk.contactValue}</strong></p>
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Duration:</span> <strong className="text-zinc-300">{bk.checkIn} to {bk.checkOut}</strong></p>
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Guests count:</span> <strong className="text-zinc-300">{bk.guestsCount}</strong></p>
+                                  <p><span className="text-zinc-500 uppercase text-[10px]">Total Pricing:</span> <strong className="text-teal-400">{bk.totalPricing} NPR</strong></p>
+                                </div>
+                                <div className="flex justify-end pt-3 mt-2 border-t border-zinc-805/30">
+                                  <button
+                                    onClick={() => deleteBooking(bk.id)}
+                                    className="text-[10px] text-red-500 hover:text-red-400 hover:underline font-mono uppercase font-bold flex items-center gap-0.5 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Cancel & Delete Booking
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Contact Enquiries */}
+                      <div className="space-y-3">
+                        <div className="bg-zinc-900 px-4 py-2 border border-zinc-800 rounded flex justify-between items-center">
+                          <span className="font-serif text-sm font-bold text-brass flex items-center gap-1.5">
+                            🗳️ Contact Form Enquiries ({enquiries.length})
+                          </span>
+                        </div>
+
+                        {enquiries.length === 0 ? (
+                          <div className="bg-zinc-900/20 text-center py-12 rounded border border-zinc-950">
+                            <p className="font-mono text-xs text-zinc-500">No contact enquiries submitted yet.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {enquiries.map((enq) => (
+                              <div key={enq.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded text-xs leading-relaxed space-y-2 relative group">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="font-bold text-zinc-200">{enq.name}</h5>
+                                    <a href={`mailto:${enq.email}`} className="text-[11px] text-brass font-mono hover:underline">{enq.email}</a>
+                                  </div>
+                                  <span className="text-[9px] font-mono text-zinc-500 truncate">{new Date(enq.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-zinc-300 bg-zinc-950 p-2.5 rounded border border-zinc-850 whitespace-pre-wrap">{enq.message}</p>
+                                <div className="flex justify-end pt-1">
+                                  <button
+                                    onClick={() => deleteEnquiry(enq.id)}
+                                    className="text-[10px] text-red-400 hover:text-red-300 hover:underline"
+                                  >
+                                    Delete Lead
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {adminTab === 'backup' && (
+                  <motion.div
+                    key="backup"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="max-w-xl mx-auto space-y-8 py-4"
+                  >
+                    <div className="bg-zinc-900/60 p-6 rounded border border-zinc-800 space-y-4">
+                      <div className="flex items-center gap-2.5 text-brass">
+                        <Download className="w-5 h-5" />
+                        <h4 className="font-serif text-base font-bold">Download Lodge Database Backup</h4>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                        Download current customized suites, prices, description arrays, guest bookings, and lead enquiries as a single clean configuration JSON file. Excellent for backups, migration, or cold deployments.
+                      </p>
+                      <button
+                        onClick={downloadBackupBytes}
+                        className="w-full py-2.5 bg-zinc-800 hover:bg-brass text-zinc-100 hover:text-teal-dark font-mono font-bold text-xs uppercase tracking-widest rounded border border-brass/50 transition cursor-pointer"
+                      >
+                        Download config.json
+                      </button>
+                    </div>
+
+                    <div className="bg-zinc-900/60 p-6 rounded border border-zinc-800 space-y-4">
+                      <div className="flex items-center gap-2.5 text-brass">
+                        <Upload className="w-5 h-5" />
+                        <h4 className="font-serif text-base font-bold">Bulk Restore config.json Backup</h4>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                        Select a previously exported safari database file (.json) to bulk restore database tables (rooms, gallery, active leads) immediately on this terminal device.
+                      </p>
+                      <div className="relative border border-dashed border-zinc-800 hover:border-brass/50 rounded p-6 text-center cursor-pointer transition bg-zinc-950">
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleJSONUpload}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          title="Choose a backup config.json file"
+                        />
+                        <div className="space-y-1.5 font-mono text-xs">
+                          <p className="text-brass font-bold">Click to choose config.json backup file</p>
+                          <p className="text-[10px] text-zinc-500">Restores all dynamic state variables instantly</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
