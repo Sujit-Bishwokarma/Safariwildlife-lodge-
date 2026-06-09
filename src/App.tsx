@@ -82,7 +82,23 @@ export default function App() {
     const saved = localStorage.getItem('safari_dynamic_rooms');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Room[] = JSON.parse(saved);
+        // Auto-repair stale paths stored in user's browser localStorage cache
+        return parsed.map(room => {
+          const fallback = ROOMS.find(r => r.id === room.id);
+          if (fallback) {
+            const isStale = !room.imageUrl || 
+                            room.imageUrl.includes('localhost:') || 
+                            room.imageUrl.includes('127.0.0.1:') || 
+                            room.imageUrl.includes('0.0.0.0:') ||
+                            room.imageUrl.includes('/src/assets/images/') ||
+                            room.imageUrl === '[object Object]';
+            if (isStale) {
+              return { ...room, imageUrl: fallback.imageUrl };
+            }
+          }
+          return room;
+        });
       } catch (e) {
         console.error(e);
       }
@@ -94,7 +110,23 @@ export default function App() {
     const saved = localStorage.getItem('safari_dynamic_gallery');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: GalleryItem[] = JSON.parse(saved);
+        // Auto-repair stale paths stored in user's browser localStorage cache
+        return parsed.map(item => {
+          const fallback = GALLERY_ITEMS.find(g => g.id === item.id);
+          if (fallback) {
+            const isStale = !item.imageUrl || 
+                            item.imageUrl.includes('localhost:') || 
+                            item.imageUrl.includes('127.0.0.1:') || 
+                            item.imageUrl.includes('0.0.0.0:') ||
+                            item.imageUrl.includes('/src/assets/images/') ||
+                            item.imageUrl === '[object Object]';
+            if (isStale) {
+              return { ...item, imageUrl: fallback.imageUrl };
+            }
+          }
+          return item;
+        });
       } catch (e) {
         console.error(e);
       }
@@ -112,6 +144,11 @@ export default function App() {
       }
     }
     return TESTIMONIALS;
+  });
+
+  const [heroBgImage, setHeroBgImage] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_hero_bg');
+    return saved || SAFARI_HERO_LODGE;
   });
 
   // Check URL parameter for admin access on load
@@ -164,8 +201,9 @@ export default function App() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   // Admin states & forms
-  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'reviews' | 'leads' | 'backup'>('rooms');
+  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'hero' | 'reviews' | 'leads' | 'backup'>('rooms');
   const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
+  const [compressingImage, setCompressingImage] = useState(false);
 
   // Room editing/adding form state
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -238,6 +276,61 @@ export default function App() {
     setTimeout(() => {
       setAdminStatusMsg(null);
     }, 4500);
+  };
+
+  // Native client-side file-manager image processors with auto-canvas compression (to avoid localStorage Quota Exceeded errors)
+  const processAndSetImage = (file: File, onDone: (base64Url: string) => void) => {
+    setCompressingImage(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Max dimension 1000px for web display
+        const MAX_DIM = 1000;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          try {
+            // Compress as JPEG at 0.72 quality
+            const base64 = canvas.toDataURL('image/jpeg', 0.72);
+            onDone(base64);
+            triggerAdminStatus('⚡ Photo loaded and optimized successfully!');
+          } catch (err) {
+            console.error('Image compression failed, using original', err);
+            onDone(e.target?.result as string);
+          }
+        } else {
+          onDone(e.target?.result as string);
+        }
+        setCompressingImage(false);
+      };
+      img.onerror = () => {
+        triggerAdminStatus('⚠️ Invalid image file processed!');
+        setCompressingImage(false);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => {
+      triggerAdminStatus('⚠️ Failed to load file from disk!');
+      setCompressingImage(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Admin Suite Handlers
@@ -709,7 +802,7 @@ export default function App() {
         {/* Parallax Background Imagery */}
         <div className="absolute inset-0">
           <img
-            src={SAFARI_HERO_LODGE}
+            src={heroBgImage}
             alt="Safari Wildlife Lodge Courtyard"
             className="w-full h-full object-cover opacity-100"
             referrerPolicy="no-referrer"
@@ -1697,11 +1790,12 @@ export default function App() {
 
             {/* Tab Nav */}
             <div className="bg-zinc-900/60 px-6 py-2 border-b border-zinc-800 flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0">
-              {(['rooms', 'gallery', 'reviews', 'leads', 'backup'] as const).map((tab) => {
+              {(['rooms', 'gallery', 'hero', 'reviews', 'leads', 'backup'] as const).map((tab) => {
                 const isActive = adminTab === tab;
                 const labels = {
                   rooms: '🏨 Manage Suites',
                   gallery: '🖼️ Manage Gallery Slider',
+                  hero: '🌅 Hero Background',
                   reviews: '⭐ Manage Reviews',
                   leads: '🗳️ Guest Leads & Enquiries',
                   backup: '⚙️ JSON Backup System'
@@ -1845,15 +1939,64 @@ export default function App() {
                               className="w-full bg-zinc-950 border border-zinc-855 text-zinc-100 focus:border-brass focus:outline-none"
                             />
                           </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Suite Picture URL</label>
-                            <input
-                              type="text"
-                              value={roomForm.imageUrl}
-                              onChange={(e) => setRoomForm({ ...roomForm, imageUrl: e.target.value })}
-                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
-                              placeholder="https://images.unsplash.com/..."
-                            />
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                              Suite Picture Source
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-950 p-4.5 rounded border border-zinc-800">
+                              {/* Direct File Upload */}
+                              <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-3 text-center group transition cursor-pointer relative min-h-[120px]">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      processAndSetImage(file, (base64) => {
+                                        setRoomForm(prev => ({ ...prev, imageUrl: base64 }));
+                                      });
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  id="suite-upload-input"
+                                />
+                                <Upload className={`w-6 h-6 mb-2 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                                <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                                  {compressingImage ? 'COMPRESSING...' : 'UPLOAD FROM FILE MANAGER'}
+                                </span>
+                                <span className="text-[9px] text-zinc-400 font-mono mt-1">Directly select JPG/PNG file from Device</span>
+                              </div>
+                              
+                              {/* Raw Image URL */}
+                              <div className="flex flex-col justify-between space-y-2">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-mono uppercase text-zinc-400 font-semibold block">Or paste static photo URL:</span>
+                                  <input
+                                    type="text"
+                                    value={roomForm.imageUrl}
+                                    onChange={(e) => setRoomForm({ ...roomForm, imageUrl: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                                    placeholder="https://images.unsplash.com/..."
+                                  />
+                                </div>
+                                
+                                {roomForm.imageUrl && (
+                                  <div className="flex items-center gap-2 bg-zinc-905/60 p-2 rounded border border-zinc-850">
+                                    <img 
+                                      src={roomForm.imageUrl} 
+                                      className="w-10 h-10 object-cover rounded border border-zinc-700 bg-zinc-950" 
+                                      alt="Preview" 
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="overflow-hidden">
+                                      <span className="text-[9px] text-emerald-400 font-mono font-bold block uppercase tracking-wider">● Image Connected</span>
+                                      <span className="text-[9px] text-zinc-400 font-mono block truncate">{roomForm.imageUrl.startsWith('data:') ? 'Base64 Loaded' : roomForm.imageUrl}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2 pt-2">
@@ -1958,15 +2101,64 @@ export default function App() {
                               placeholder="e.g. Royal Bengal Tiger on Raptor River shore"
                             />
                           </div>
-                          <div>
-                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Image URL Address</label>
-                            <input
-                              type="text"
-                              value={galleryForm.imageUrl}
-                              onChange={(e) => setGalleryForm({ ...galleryForm, imageUrl: e.target.value })}
-                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-3 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
-                              placeholder="https://images.unsplash.com/..."
-                            />
+                          <div className="space-y-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                              Gallery Image Source
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-950 p-4 rounded border border-zinc-800">
+                              {/* Direct File Upload */}
+                              <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-3 text-center group transition cursor-pointer relative min-h-[110px]">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      processAndSetImage(file, (base64) => {
+                                        setGalleryForm(prev => ({ ...prev, imageUrl: base64 }));
+                                      });
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  id="gallery-upload-input"
+                                />
+                                <Upload className={`w-5.5 h-5.5 mb-1.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                                  {compressingImage ? 'COMPRESSING...' : 'UPLOAD FROM FILE MANAGER'}
+                                </span>
+                                <span className="text-[8px] text-zinc-400 font-mono mt-0.5">Select JPG/PNG from Device</span>
+                              </div>
+                              
+                              {/* Raw Image URL */}
+                              <div className="flex flex-col justify-between space-y-2">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-mono uppercase text-zinc-400 font-semibold block">Or paste static photo URL:</span>
+                                  <input
+                                    type="text"
+                                    value={galleryForm.imageUrl}
+                                    onChange={(e) => setGalleryForm({ ...galleryForm, imageUrl: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-805 rounded px-2.5 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                                    placeholder="https://images.unsplash.com/..."
+                                  />
+                                </div>
+                                
+                                {galleryForm.imageUrl && (
+                                  <div className="flex items-center gap-2 bg-zinc-905/60 p-1.5 rounded border border-zinc-850">
+                                    <img 
+                                      src={galleryForm.imageUrl} 
+                                      className="w-8 h-8 object-cover rounded border border-zinc-700 bg-zinc-950" 
+                                      alt="Preview" 
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="overflow-hidden">
+                                      <span className="text-[8px] text-emerald-400 font-mono font-bold block uppercase tracking-wider leading-none mb-0.5">● Connected</span>
+                                      <span className="text-[8px] text-zinc-400 font-mono block truncate leading-none">{galleryForm.imageUrl.startsWith('data:') ? 'Base64 Loaded' : galleryForm.imageUrl}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2 pt-2">
@@ -2021,6 +2213,118 @@ export default function App() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {adminTab === 'hero' && (
+                  <motion.div
+                    key="hero"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6 max-w-4xl"
+                  >
+                    <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                      <h4 className="font-serif text-base font-bold text-zinc-100">Hero Section Background</h4>
+                      <p className="text-[11px] text-zinc-400 font-mono">Customize the primary large welcome banner background image on your homepage.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
+                      {/* Current Preview */}
+                      <div className="space-y-3">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Banner Preview</span>
+                        <div className="relative rounded-lg overflow-hidden border border-zinc-800 aspect-video bg-zinc-950 group">
+                          <img 
+                            src={heroBgImage} 
+                            alt="Active Hero Background" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                            <div>
+                              <p className="text-warm-white font-serif font-bold text-sm">Chitwan Wilderness Resort</p>
+                              <p className="text-zinc-400 font-mono text-[9px] truncate max-w-xs">{heroBgImage.startsWith('data:') ? 'Custom Uploaded Base64' : heroBgImage}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Reset the welcome hero banner back to the original default image?')) {
+                                setHeroBgImage(SAFARI_HERO_LODGE);
+                                localStorage.removeItem('safari_dynamic_hero_bg');
+                                triggerAdminStatus('🔄 Hero background restored to factory default!');
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                          >
+                            Reset to Default
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Customize Source */}
+                      <div className="space-y-4">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Upload or Change Source</span>
+                        
+                        {/* Direct File Upload */}
+                        <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-5 text-center group transition cursor-pointer relative min-h-[145px] bg-zinc-950/50">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                processAndSetImage(file, (base64) => {
+                                  setHeroBgImage(base64);
+                                  localStorage.setItem('safari_dynamic_hero_bg', base64);
+                                  triggerAdminStatus('🎉 Hero background updated from computer!');
+                                });
+                              }
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            id="hero-banner-upload-input"
+                          />
+                          <Upload className={`w-8 h-8 mb-2.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                          <span className="text-[11.5px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                            {compressingImage ? 'COMPRESSING...' : 'UPLOAD DIRECTLY FROM DEVICE'}
+                          </span>
+                          <span className="text-[9px] text-zinc-500 font-mono mt-1.5">cPanel friendly dynamic base64 auto-compressor</span>
+                        </div>
+
+                        {/* Paste Web Address */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-medium">Or paste any web image url address:</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={heroBgImage.startsWith('data:') ? '' : heroBgImage}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                  setHeroBgImage(val);
+                                  localStorage.setItem('safari_dynamic_hero_bg', val);
+                                }
+                              }}
+                              className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 text-warm-white placeholder-zinc-700 focus:border-brass focus:outline-none font-mono text-xs"
+                              placeholder="https://images.unsplash.com/your-custom-image-url..."
+                            />
+                            {heroBgImage && !heroBgImage.startsWith('data:') && (
+                              <button
+                                onClick={() => {
+                                  setHeroBgImage(SAFARI_HERO_LODGE);
+                                  localStorage.setItem('safari_dynamic_hero_bg', SAFARI_HERO_LODGE);
+                                  triggerAdminStatus('🔄 Image URL cleared!');
+                                }}
+                                className="px-2.5 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded text-xs font-mono shrink-0 cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}

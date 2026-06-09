@@ -1,27 +1,39 @@
 import { Room, Amenity, GalleryItem, Testimonial } from './types';
 
-// Use dynamic asset references so Vite bundles them correctly in production systems like cPanel or Bisup without needing static PNG type declarations.
-const SAFARI_HERO_LODGE = new URL('./assets/images/safari_courtyard_original.jpg', import.meta.url).href;
-const SAFARI_SUITE_ROOM = new URL('./assets/images/safari_suite_room_1780737640544.png', import.meta.url).href;
-const SAFARI_DINING = new URL('./assets/images/safari_dining_1780737654970.png', import.meta.url).href;
-const SAFARI_RHINO = new URL('./assets/images/safari_rhino_1780737668940.png', import.meta.url).href;
+// @ts-ignore
+import SAFARI_HERO_LODGE_IMG from './assets/images/safari_courtyard_original.jpg';
+// @ts-ignore
+import SAFARI_SUITE_ROOM_IMG from './assets/images/safari_suite_room_1780737640544.png';
+// @ts-ignore
+import SAFARI_DINING_IMG from './assets/images/safari_dining_1780737654970.png';
+// @ts-ignore
+import SAFARI_RHINO_IMG from './assets/images/safari_rhino_1780737668940.png';
+// @ts-ignore
+import SAFARI_HERO_ENHANCED_IMG from './assets/images/safari_hero_enhanced_1780749642176.png';
+// @ts-ignore
+import SAFARI_RESORT_COURTYARD_IMG from './assets/images/safari_resort_courtyard_1780749113437.png';
+// @ts-ignore
+import SAFARI_HERO_LODGE_ALT_IMG from './assets/images/safari_hero_lodge_1780737625214.png';
 
-// Additional Dynamic Asset References
-const SAFARI_HERO_ENHANCED = new URL('./assets/images/safari_hero_enhanced_1780749642176.png', import.meta.url).href;
-const SAFARI_RESORT_COURTYARD = new URL('./assets/images/safari_resort_courtyard_1780749113437.png', import.meta.url).href;
-const SAFARI_HERO_LODGE_ALT = new URL('./assets/images/safari_hero_lodge_1780737625214.png', import.meta.url).href;
+const SAFARI_HERO_LODGE = SAFARI_HERO_LODGE_IMG;
+const SAFARI_SUITE_ROOM = SAFARI_SUITE_ROOM_IMG;
+const SAFARI_DINING = SAFARI_DINING_IMG;
+const SAFARI_RHINO = SAFARI_RHINO_IMG;
+const SAFARI_HERO_ENHANCED = SAFARI_HERO_ENHANCED_IMG;
+const SAFARI_RESORT_COURTYARD = SAFARI_RESORT_COURTYARD_IMG;
+const SAFARI_HERO_LODGE_ALT = SAFARI_HERO_LODGE_ALT_IMG;
 
-const SAFARI_POOL_DECK = new URL('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_BIRDS_EXCURSION = new URL('https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_TIGER_PATROL = new URL('https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_VERANDA_GARDENS = new URL('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_DEER_DAWN = new URL('https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_CULINARY_DINING = new URL('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_ELEPHANT_CLOSE = new URL('https://images.unsplash.com/photo-1551085254-e96b210db58a?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_RIVER_SUNSET = new URL('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_JUNGLE_PATH = new URL('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_CROCODILE = new URL('https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
-const SAFARI_CAMP_BONFIRE = new URL('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80', import.meta.url).href;
+const SAFARI_POOL_DECK = 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_BIRDS_EXCURSION = 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_TIGER_PATROL = 'https://images.unsplash.com/photo-1602491453974-093fe2bc2767?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_VERANDA_GARDENS = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_DEER_DAWN = 'https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_CULINARY_DINING = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_ELEPHANT_CLOSE = 'https://images.unsplash.com/photo-1551085254-e96b210db58a?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_RIVER_SUNSET = 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_JUNGLE_PATH = 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_CROCODILE = 'https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1200&q=80';
+const SAFARI_CAMP_BONFIRE = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80';
 
 export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
 
