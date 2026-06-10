@@ -39,10 +39,11 @@ import {
   History
 } from 'lucide-react';
 
-import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE } from './data';
+import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_LODGE_LOGO } from './data';
 import { Room, BookingSubmission, GalleryItem, Testimonial } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
+import backupData from '../safari_lodge_database_backup_2026-06-10.json';
 
 const slideVariants = {
   enter: (dir: 'left' | 'right') => ({
@@ -146,10 +147,107 @@ export default function App() {
     return TESTIMONIALS;
   });
 
-  const [heroBgImage, setHeroBgImage] = useState<string>(() => {
+   const [heroBgImage, setHeroBgImage] = useState<string>(() => {
     const saved = localStorage.getItem('safari_dynamic_hero_bg');
-    return saved || SAFARI_HERO_LODGE;
+    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && saved !== '[object Object]') {
+      const isStale = saved.includes('localhost:') || 
+                      saved.includes('127.0.0.1:') || 
+                      saved.includes('0.0.0.0:') ||
+                      saved.includes('/src/assets/images/');
+      if (!isStale) {
+        return saved;
+      }
+    }
+    // Pull the gorgeous hero background from backupData if available
+    if (backupData && typeof backupData === 'object' && Array.isArray((backupData as any).galleryItems)) {
+      const gallery = (backupData as any).galleryItems;
+      const viewItem = gallery.find((item: any) => item.title === 'View' || item.id === 'g-1781021834340');
+      if (viewItem && viewItem.imageUrl) {
+        return viewItem.imageUrl;
+      }
+      if (gallery[0] && gallery[0].imageUrl) {
+        return gallery[0].imageUrl;
+      }
+    }
+    // Deep fallback to a gorgeous, premium Unsplash resort courtyard image if SAFARI_HERO_LODGE fails or is falsy
+    return SAFARI_HERO_LODGE || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80';
   });
+
+  const [brandLogoImage, setBrandLogoImage] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_logo');
+    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && saved !== '[object Object]') {
+      const isStale = saved.includes('localhost:') || 
+                      saved.includes('127.0.0.1:') || 
+                      saved.includes('0.0.0.0:') ||
+                      saved.includes('/src/assets/images/');
+      if (!isStale) {
+        return saved;
+      }
+    }
+    return SAFARI_LODGE_LOGO;
+  });
+
+  // Auto-apply the uploaded backup JSON file if first time loading
+  useEffect(() => {
+    const backupApplied = localStorage.getItem('safari_applied_backup_2026-06-10');
+    if (!backupApplied && backupData && typeof backupData === 'object') {
+      try {
+        let applied = false;
+        if (Array.isArray((backupData as any).rooms)) {
+          setRooms((backupData as any).rooms);
+          localStorage.setItem('safari_dynamic_rooms', JSON.stringify((backupData as any).rooms));
+          applied = true;
+        }
+        if (Array.isArray((backupData as any).galleryItems)) {
+          setGalleryItems((backupData as any).galleryItems);
+          localStorage.setItem('safari_dynamic_gallery', JSON.stringify((backupData as any).galleryItems));
+          applied = true;
+          
+          // Extrapolate the custom hero background from the backup database
+          const gallery = (backupData as any).galleryItems;
+          const viewItem = gallery.find((item: any) => item.title === 'View' || item.id === 'g-1781021834340');
+          if (viewItem && viewItem.imageUrl) {
+            setHeroBgImage(viewItem.imageUrl);
+            localStorage.setItem('safari_dynamic_hero_bg', viewItem.imageUrl);
+          } else if (gallery[0] && gallery[0].imageUrl) {
+            setHeroBgImage(gallery[0].imageUrl);
+            localStorage.setItem('safari_dynamic_hero_bg', gallery[0].imageUrl);
+          }
+        }
+        if (Array.isArray((backupData as any).testimonials)) {
+          setTestimonials((backupData as any).testimonials);
+          localStorage.setItem('safari_dynamic_testimonials', JSON.stringify((backupData as any).testimonials));
+          applied = true;
+        }
+        if (Array.isArray((backupData as any).activeBookings)) {
+          setActiveBookings((backupData as any).activeBookings);
+          localStorage.setItem('safari_bookings', JSON.stringify((backupData as any).activeBookings));
+          applied = true;
+        }
+        if (Array.isArray((backupData as any).enquiries)) {
+          setEnquiries((backupData as any).enquiries);
+          localStorage.setItem('safari_enquiries', JSON.stringify((backupData as any).enquiries));
+          applied = true;
+        }
+        if (applied) {
+          localStorage.setItem('safari_applied_backup_2026-06-10', 'true');
+          console.log('⚡ Applied safari_lodge_database_backup_2026-06-10.json configuration successfully');
+        }
+      } catch (err) {
+        console.error('Failed to auto-apply database backup', err);
+      }
+    }
+  }, []);
+
+  // One-time cache clear to force-apply the upgraded WA0015 logo asset
+  useEffect(() => {
+    const updatedLogoDone = localStorage.getItem('safari_logo_updated_20260606');
+    if (!updatedLogoDone) {
+      localStorage.removeItem('safari_dynamic_logo');
+      setBrandLogoImage(SAFARI_LODGE_LOGO);
+      localStorage.setItem('safari_logo_updated_20260606', 'true');
+    }
+  }, []);
 
   // Check URL parameter for admin access on load
   useEffect(() => {
@@ -748,13 +846,23 @@ export default function App() {
         <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-3' : 'py-5'}`}>
           
           {/* Brand Logo & Name */}
-          <a href="#home" className="flex flex-col group focus:outline-none focus:ring-1 focus:ring-brass p-1 rounded-md">
-            <h1 className={`font-serif font-bold text-lg md:text-xl leading-tight tracking-wider uppercase transition-colors duration-300 ${isScrolled ? 'text-teal-dark' : 'text-warm-white'}`}>
-              Safari Wildlife
-            </h1>
-            <p className="text-[10px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-1">
-              Lodge & Camp • Chitwan
-            </p>
+          <a href="#home" className="flex items-center gap-3 group focus:outline-none focus:ring-1 focus:ring-brass p-1 rounded-md">
+            <div className={`w-11 h-11 md:w-14 md:h-14 rounded-full overflow-hidden border transition-all duration-300 bg-white flex-shrink-0 flex items-center justify-center p-0.5 shadow-sm group-hover:border-brass ${isScrolled ? 'border-teal-dark/25' : 'border-brass/35'}`}>
+              <img 
+                src={brandLogoImage} 
+                className="w-full h-full object-contain rounded-full" 
+                alt="Safari Wildlife Logo" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex flex-col">
+              <h1 className={`font-serif font-bold text-base md:text-lg leading-tight tracking-wider uppercase transition-colors duration-300 ${isScrolled ? 'text-teal-dark' : 'text-warm-white'}`}>
+                Safari Wildlife
+              </h1>
+              <p className="text-[9px] md:text-[10px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-1">
+                Lodge & Camp • Chitwan
+              </p>
+            </div>
           </a>
 
           {/* Nav Links */}
@@ -806,6 +914,10 @@ export default function App() {
             alt="Safari Wildlife Lodge Courtyard"
             className="w-full h-full object-cover opacity-100"
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              console.warn("Primary hero background asset failed, loading premium Unsplash fallback");
+              e.currentTarget.src = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-teal-dark via-teal-dark/15 to-transparent" />
           <div className="absolute inset-0 bg-black/20" />
@@ -1222,7 +1334,7 @@ export default function App() {
                     />
                     
                     {/* Multi-layered cinematic overlay shadow */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/95 via-teal-dark/40 to-black/10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
                     {/* Content Details on active slide */}
                     <div className="relative p-6 sm:p-10 md:p-12 text-warm-white space-y-2 pointer-events-none max-w-xl">
@@ -1636,9 +1748,19 @@ export default function App() {
               <div className="space-y-8">
                 {/* Header inside drawer */}
                 <div className="flex items-center justify-between border-b border-brass/10 pb-4">
-                  <div className="flex flex-col">
-                    <span className="font-serif font-bold text-lg text-teal-dark uppercase tracking-wider">Safari Wildlife</span>
-                    <span className="text-[10px] text-brass uppercase font-bold font-mono tracking-widest mt-0.5">Lodge & Camp • Chitwan</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-brass/35 bg-white p-0.5 shadow-sm">
+                      <img 
+                        src={brandLogoImage} 
+                        className="w-full h-full object-contain rounded-full" 
+                        alt="Safari Logo"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-serif font-bold text-base text-teal-dark uppercase tracking-wider">Safari Wildlife</span>
+                      <span className="text-[9px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-0.5">Lodge & Camp</span>
+                    </div>
                   </div>
                   <button 
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -1794,8 +1916,8 @@ export default function App() {
                 const isActive = adminTab === tab;
                 const labels = {
                   rooms: '🏨 Manage Suites',
-                  gallery: '🖼️ Manage Gallery Slider',
-                  hero: '🌅 Hero Background',
+                  gallery: '🖼️ Manage Gallery Slider hover',
+                  hero: '🌅 Logo & Banner',
                   reviews: '⭐ Manage Reviews',
                   leads: '🗳️ Guest Leads & Enquiries',
                   backup: '⚙️ JSON Backup System'
@@ -2223,11 +2345,86 @@ export default function App() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="space-y-6 max-w-4xl"
+                    className="space-y-8 max-w-4xl"
                   >
-                    <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
-                      <h4 className="font-serif text-base font-bold text-zinc-100">Hero Section Background</h4>
-                      <p className="text-[11px] text-zinc-400 font-mono">Customize the primary large welcome banner background image on your homepage.</p>
+                    {/* Brand Logo Section */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Lodge Brand Logo & Identity</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Customize the primary circular logo brand icon displayed across the website headers and navigation bar.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
+                        {/* Current Preview */}
+                        <div className="space-y-3">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Logo Preview</span>
+                          <div className="flex items-center justify-center p-4 bg-zinc-950 rounded-lg border border-zinc-850 h-[145px]">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-brass bg-white flex items-center justify-center p-1 shadow-md">
+                              <img 
+                                src={brandLogoImage} 
+                                alt="Active Brand Logo" 
+                                className="w-full h-full object-contain rounded-full"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Reset the brand logo back to the original circular crest logo?')) {
+                                  setBrandLogoImage(SAFARI_LODGE_LOGO);
+                                  localStorage.removeItem('safari_dynamic_logo');
+                                  triggerAdminStatus('🔄 Brand logo restored to original crest!');
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                            >
+                              Reset to Default
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Customize Logo Source */}
+                        <div className="space-y-4">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Upload Logo or Change Source</span>
+                          
+                          {/* Direct File Upload */}
+                          <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-5 text-center group transition cursor-pointer relative min-h-[145px] bg-zinc-950/50">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  processAndSetImage(file, (base64) => {
+                                    setBrandLogoImage(base64);
+                                    localStorage.setItem('safari_dynamic_logo', base64);
+                                    triggerAdminStatus('🎉 Brand logo successfully updated!');
+                                  });
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="logo-brand-upload-input"
+                            />
+                            <Upload className={`w-8 h-8 mb-2.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                            <span className="text-[11.5px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                              {compressingImage ? 'COMPRESSING...' : 'UPLOAD NEW LOGO BRAND'}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-mono mt-1.5">Supports high-res PNG, JPG, or transparent SVGs</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separator line */}
+                    <hr className="border-zinc-800" />
+
+                    {/* Hero Background Banner Section */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Hero Section Background</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Customize the primary large welcome banner background image on your homepage.</p>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
@@ -2240,6 +2437,9 @@ export default function App() {
                             alt="Active Hero Background" 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80";
+                            }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
                             <div>

@@ -14,6 +14,8 @@ import SAFARI_HERO_ENHANCED_IMG from './assets/images/safari_hero_enhanced_17807
 import SAFARI_RESORT_COURTYARD_IMG from './assets/images/safari_resort_courtyard_1780749113437.png';
 // @ts-ignore
 import SAFARI_HERO_LODGE_ALT_IMG from './assets/images/safari_hero_lodge_1780737625214.png';
+// @ts-ignore
+import SAFARI_LODGE_LOGO_IMG from './assets/images/IMG-20260606-WA0015.jpg';
 
 const SAFARI_HERO_LODGE = SAFARI_HERO_LODGE_IMG;
 const SAFARI_SUITE_ROOM = SAFARI_SUITE_ROOM_IMG;
@@ -22,6 +24,7 @@ const SAFARI_RHINO = SAFARI_RHINO_IMG;
 const SAFARI_HERO_ENHANCED = SAFARI_HERO_ENHANCED_IMG;
 const SAFARI_RESORT_COURTYARD = SAFARI_RESORT_COURTYARD_IMG;
 const SAFARI_HERO_LODGE_ALT = SAFARI_HERO_LODGE_ALT_IMG;
+const SAFARI_LODGE_LOGO = SAFARI_LODGE_LOGO_IMG;
 
 const SAFARI_POOL_DECK = 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80';
 const SAFARI_BIRDS_EXCURSION = 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=1200&q=80';
@@ -35,7 +38,7 @@ const SAFARI_JUNGLE_PATH = 'https://images.unsplash.com/photo-1534447677768-be43
 const SAFARI_CROCODILE = 'https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1200&q=80';
 const SAFARI_CAMP_BONFIRE = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80';
 
-export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO };
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_LODGE_LOGO };
 
 export const ROOMS: Room[] = [
   {
