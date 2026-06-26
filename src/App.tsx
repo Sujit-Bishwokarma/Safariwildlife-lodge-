@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 
 import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_LODGE_LOGO } from './data';
-import { Room, BookingSubmission, GalleryItem, Testimonial } from './types';
+import { Room, BookingSubmission, GalleryItem, Testimonial, Amenity } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import backupData from '../safari_lodge_database_backup_2026-06-10.json';
@@ -135,6 +135,18 @@ export default function App() {
     return GALLERY_ITEMS;
   });
 
+  const [amenities, setAmenities] = useState<Amenity[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_amenities');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return AMENITIES;
+  });
+
   const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
     const saved = localStorage.getItem('safari_dynamic_testimonials');
     if (saved) {
@@ -187,9 +199,23 @@ export default function App() {
     return SAFARI_LODGE_LOGO;
   });
 
+  const [instagramUrl, setInstagramUrl] = useState<string>(() => {
+    return localStorage.getItem('safari_social_instagram') || 'https://instagram.com';
+  });
+  const [facebookUrl, setFacebookUrl] = useState<string>(() => {
+    return localStorage.getItem('safari_social_facebook') || 'https://facebook.com';
+  });
+  const [whatsappPhone, setWhatsappPhone] = useState<string>(() => {
+    return localStorage.getItem('safari_social_whatsapp') || '9779700863273';
+  });
+
+  const [gmailEnquiryTarget, setGmailEnquiryTarget] = useState<string>(() => {
+    return localStorage.getItem('safari_enquiry_gmail') || 'safarilodgechitwan@gmail.com';
+  });
+
   // Auto-apply the uploaded backup JSON file if first time loading
   useEffect(() => {
-    const backupApplied = localStorage.getItem('safari_applied_backup_2026-06-10');
+    const backupApplied = localStorage.getItem('safari_applied_backup_2026-06-16');
     if (!backupApplied && backupData && typeof backupData === 'object') {
       try {
         let applied = false;
@@ -219,6 +245,11 @@ export default function App() {
           localStorage.setItem('safari_dynamic_testimonials', JSON.stringify((backupData as any).testimonials));
           applied = true;
         }
+        if (Array.isArray((backupData as any).amenities)) {
+          setAmenities((backupData as any).amenities);
+          localStorage.setItem('safari_dynamic_amenities', JSON.stringify((backupData as any).amenities));
+          applied = true;
+        }
         if (Array.isArray((backupData as any).activeBookings)) {
           setActiveBookings((backupData as any).activeBookings);
           localStorage.setItem('safari_bookings', JSON.stringify((backupData as any).activeBookings));
@@ -230,8 +261,8 @@ export default function App() {
           applied = true;
         }
         if (applied) {
-          localStorage.setItem('safari_applied_backup_2026-06-10', 'true');
-          console.log('⚡ Applied safari_lodge_database_backup_2026-06-10.json configuration successfully');
+          localStorage.setItem('safari_applied_backup_2026-06-16', 'true');
+          console.log('⚡ Applied safari_lodge_database_backup_2026-06-10.json configuration successfully with updated prices');
         }
       } catch (err) {
         console.error('Failed to auto-apply database backup', err);
@@ -292,6 +323,10 @@ export default function App() {
   const [galleryIndex, setGalleryIndex] = useState<number>(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
+  // Reviews Slide Show
+  const [reviewsIndex, setReviewsIndex] = useState<number>(0);
+  const [reviewsDirection, setReviewsDirection] = useState<'left' | 'right'>('right');
+
   // Contact Form State
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -299,9 +334,19 @@ export default function App() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   // Admin states & forms
-  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'hero' | 'reviews' | 'leads' | 'backup'>('rooms');
+  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'amenities' | 'hero' | 'reviews' | 'leads' | 'backup'>('rooms');
   const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
   const [compressingImage, setCompressingImage] = useState(false);
+
+  // Amenities editing/adding form state
+  const [editingAmenityId, setEditingAmenityId] = useState<string | null>(null);
+  const [amenityForm, setAmenityForm] = useState<Partial<Amenity>>({
+    id: '',
+    name: '',
+    category: 'Free',
+    description: '',
+    iconName: 'Compass'
+  });
 
   // Room editing/adding form state
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -451,7 +496,7 @@ export default function App() {
       priceNpr: 15000,
       imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
       amenities: ['Air Conditioning', 'Comfort'],
-      highlight: 'Eco-Luxury sanctuary'
+      highlight: 'Cozy garden retreat'
     });
     setRoomAmenityInput('Air Conditioning, Comfort');
   };
@@ -472,16 +517,16 @@ export default function App() {
       priceNpr: Number(roomForm.priceNpr) || 12000,
       imageUrl: roomForm.imageUrl || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
       amenities: roomAmenityInput.split(',').map(s => s.trim()).filter(Boolean),
-      highlight: roomForm.highlight || 'Luxury guaranteed'
+      highlight: roomForm.highlight || 'Comfort guaranteed'
     };
 
     let updatedRooms: Room[];
     if (editingRoomId === 'new') {
       updatedRooms = [...rooms, finalRoom];
-      triggerAdminStatus('🎉 New Suite successfully added!');
+      triggerAdminStatus('🎉 New Room successfully added!');
     } else {
       updatedRooms = rooms.map(r => r.id === editingRoomId ? finalRoom : r);
-      triggerAdminStatus('✏️ Suite successfully updated!');
+      triggerAdminStatus('✏️ Room successfully updated!');
     }
 
     setRooms(updatedRooms);
@@ -549,6 +594,57 @@ export default function App() {
     if (galleryIndex >= updated.length) {
       setGalleryIndex(0);
     }
+  };
+
+  // Admin Amenities Handlers
+  const startEditAmenity = (amen: Amenity) => {
+    setEditingAmenityId(amen.id);
+    setAmenityForm({ ...amen });
+  };
+
+  const startAddAmenity = () => {
+    setEditingAmenityId('new');
+    setAmenityForm({
+      id: 'amen-' + Date.now(),
+      name: '',
+      category: 'Free',
+      description: '',
+      iconName: 'Compass'
+    });
+  };
+
+  const saveAmenity = () => {
+    if (!amenityForm.name || !amenityForm.description) {
+      triggerAdminStatus('⚠️ Please fill in both name and description');
+      return;
+    }
+    const finalItem: Amenity = {
+      id: amenityForm.id || 'amen-' + Date.now(),
+      name: amenityForm.name,
+      category: amenityForm.category || 'Free',
+      description: amenityForm.description,
+      iconName: amenityForm.iconName || 'Compass'
+    };
+
+    let updated: Amenity[];
+    if (editingAmenityId === 'new') {
+      updated = [...amenities, finalItem];
+      triggerAdminStatus('🎉 New Amenity added!');
+    } else {
+      updated = amenities.map(item => item.id === editingAmenityId ? finalItem : item);
+      triggerAdminStatus('✏️ Amenity details updated!');
+    }
+
+    setAmenities(updated);
+    localStorage.setItem('safari_dynamic_amenities', JSON.stringify(updated));
+    setEditingAmenityId(null);
+  };
+
+  const deleteAmenity = (id: string) => {
+    const updated = amenities.filter(item => item.id !== id);
+    setAmenities(updated);
+    localStorage.setItem('safari_dynamic_amenities', JSON.stringify(updated));
+    triggerAdminStatus('🗑️ Amenity deleted!');
   };
 
   // Admin Reviews/Testimonials Handlers
@@ -635,16 +731,19 @@ export default function App() {
   };
 
   const resetToFactoryDefaults = () => {
-    if (window.confirm('Wipe dynamically updated suites, images, and reviews? This restores the factory default state.')) {
+    if (window.confirm('Wipe dynamically updated suites, images, amenities, and reviews? This restores the factory default state.')) {
       localStorage.removeItem('safari_dynamic_rooms');
       localStorage.removeItem('safari_dynamic_gallery');
       localStorage.removeItem('safari_dynamic_testimonials');
+      localStorage.removeItem('safari_dynamic_amenities');
       setRooms(ROOMS);
       setGalleryItems(GALLERY_ITEMS);
       setTestimonials(TESTIMONIALS);
+      setAmenities(AMENITIES);
       setEditingRoomId(null);
       setEditingGalleryId(null);
       setEditingTestimonialId(null);
+      setEditingAmenityId(null);
       triggerAdminStatus('🔄 Lodge database restored to default static templates.');
     }
   };
@@ -655,6 +754,7 @@ export default function App() {
       rooms,
       galleryItems,
       testimonials,
+      amenities,
       activeBookings,
       enquiries
     };
@@ -707,6 +807,11 @@ export default function App() {
             localStorage.setItem('safari_enquiries', JSON.stringify(parsed.enquiries));
             hasUpdated = true;
           }
+          if (Array.isArray(parsed.amenities)) {
+            setAmenities(parsed.amenities);
+            localStorage.setItem('safari_dynamic_amenities', JSON.stringify(parsed.amenities));
+            hasUpdated = true;
+          }
 
           if (hasUpdated) {
             triggerAdminStatus('📥 Lodge database successfully bulk restored!');
@@ -756,6 +861,10 @@ export default function App() {
     e.preventDefault();
     if (!contactName || !contactEmail || !contactMessage) return;
 
+    const emailForMailto = contactEmail;
+    const nameForMailto = contactName;
+    const messageForMailto = contactMessage;
+
     // Simulate enquiry box
     const newEnquiry = {
       id: 'ENQ-' + Date.now(),
@@ -770,6 +879,15 @@ export default function App() {
     localStorage.setItem('safari_enquiries', JSON.stringify(existing));
 
     setContactSuccess(true);
+
+    // Open mail client
+    const mailtoUrl = `mailto:${gmailEnquiryTarget}?subject=Wilderness Enquiry: ${encodeURIComponent(nameForMailto)}&body=${encodeURIComponent(
+      `Namaste,\n\nYou have received a wilderness enquiry from Nepal Safari Lodge.\n\nGuest Name: ${nameForMailto}\nEmail: ${emailForMailto}\n\nMessage:\n${messageForMailto}\n\n--\nNepal Safari Lodge Wilderness Dispatch`
+    )}`;
+    
+    // Redirect to mailto so user can send using their email client / Gmail
+    window.location.href = mailtoUrl;
+
     // Reset Form
     setContactName('');
     setContactEmail('');
@@ -777,7 +895,7 @@ export default function App() {
 
     setTimeout(() => {
       setContactSuccess(false);
-    }, 8000);
+    }, 10000);
   };
 
   const deleteBooking = (id: string) => {
@@ -801,6 +919,18 @@ export default function App() {
     setGalleryIndex((prev) => (prev === filteredGallery.length - 1 ? 0 : prev + 1));
   };
 
+  const handlePrevReview = () => {
+    if (testimonials.length <= 1) return;
+    setReviewsDirection('left');
+    setReviewsIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
+  };
+
+  const handleNextReview = () => {
+    if (testimonials.length <= 1) return;
+    setReviewsDirection('right');
+    setReviewsIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
+  };
+
   // Helper mapping for icon rendering
   const renderAmenityIcon = (iconName: string) => {
     switch (iconName) {
@@ -808,6 +938,10 @@ export default function App() {
       case 'Utensils': return <Utensils className="w-5 h-5 text-brass" />;
       case 'Car': return <Car className="w-5 h-5 text-brass" />;
       case 'Plane': return <Plane className="w-5 h-5 text-brass" />;
+      case 'Sparkles': return <Sparkles className="w-5 h-5 text-brass" />;
+      case 'ShieldCheck': return <ShieldCheck className="w-5 h-5 text-brass" />;
+      case 'Award': return <Award className="w-5 h-5 text-brass" />;
+      case 'Clock': return <Clock className="w-5 h-5 text-brass" />;
       default: return <Compass className="w-5 h-5 text-brass" />;
     }
   };
@@ -823,7 +957,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-teal-300 rounded-full animate-pulse shrink-0" />
                 <p className="text-xs font-mono">
-                  <strong className="text-white">Active Selection:</strong> You have {activeBookings.length} luxury suite reservation{activeBookings.length > 1 ? 's' : ''} locked on this device.
+                  <strong className="text-white">Active Selection:</strong> You have {activeBookings.length} room reservation{activeBookings.length > 1 ? 's' : ''} saved on this device.
                 </p>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-0.5 sm:pb-0">
@@ -954,7 +1088,7 @@ export default function App() {
               transition={{ duration: 1, delay: 0.6 }}
               className="text-warm-white/85 max-w-xl mx-auto text-sm md:text-base tracking-wide font-normal"
             >
-              Stay Close to Nature, Closer to Adventure. Experience the pristine beauty of Nepal's wild animal sanctuaries, comfortable rustic luxury suites, and uncompromised security.
+              Stay Close to Nature, Closer to Adventure. Experience the pristine beauty of Chitwan National Park with our comfortable rustic rooms and warm, local hospitality.
             </motion.p>
 
             {/* Glowing Hero Action Buttons */}
@@ -969,13 +1103,13 @@ export default function App() {
                 className="w-full sm:w-auto px-8 py-4 bg-brass hover:bg-brass-dark text-teal-dark font-serif font-bold text-sm uppercase tracking-widest rounded-lg shadow-lg hover:shadow-brass/20 transition-all btn-glow cursor-pointer"
                 id="hero-book-cta"
               >
-                Secure Booking Now
+                Book Your Stay
               </button>
               <a
                 href="#suites"
                 className="w-full sm:w-auto px-8 py-4 bg-warm-white/10 hover:bg-warm-white text-warm-white hover:text-teal-dark border border-warm-white/30 font-serif font-semibold text-sm uppercase tracking-widest rounded-lg transition-all"
               >
-                View Luxury Suites
+                View Our Rooms
               </a>
             </motion.div>
           </div>
@@ -1035,17 +1169,17 @@ export default function App() {
         >
           
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Why guests return</span>
+            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Our Philosophy</span>
             <h3 className="font-serif text-3xl md:text-5xl text-teal-dark tracking-tight leading-tight font-bold">
-              A Refined Sanctuary on the Chitwan Border
+              A Simple Nature Lodge Experience
             </h3>
             <p className="text-sm text-teal-dark/70 leading-relaxed">
-              Experience comfortable accommodations, warm hospitality, and close encounters with nature. Whether you're seeking adventure or tranquility, every stay promises lasting memories.
+              Enjoy comfortable rustic rooms, gentle guided nature walks, and friendly hospitality right next to Chitwan National Park.
             </p>
           </div>
 
-          {/* Highlights 3-4 Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Highlights 2-column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             
             {/* Highlight 1 */}
             <motion.div 
@@ -1053,15 +1187,18 @@ export default function App() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="bg-warm-white/60 p-8 rounded-xl border border-brass/15 hover:border-brass/45 hover:bg-white transition-all duration-300 shadow-sm relative group"
+              whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              className="bg-gradient-to-b from-white/95 to-warm-white/60 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-white transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(139,115,85,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(139,115,85,0.18)] relative group overflow-hidden"
             >
-              <div className="w-12 h-12 bg-teal-dark/5 rounded-lg flex items-center justify-center text-brass mb-6 group-hover:bg-teal-dark group-hover:text-warm-white transition-all duration-300">
-                <Compass className="w-6 h-6" />
+              <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">01</span>
+              
+              <div className="w-14 h-14 bg-teal-dark/5 rounded-xl flex items-center justify-center text-brass mb-6 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 shadow-sm">
+                <ShieldCheck className="w-7 h-7" />
               </div>
-              <h4 className="font-serif text-xl font-bold text-teal-dark mb-2">Unmatched Wild Wilderness</h4>
+              
+              <h4 className="font-serif text-2xl font-bold text-teal-dark mb-3 group-hover:text-brass transition-colors">Cozy & Safe Retreat</h4>
               <p className="text-xs text-teal-dark/75 leading-relaxed">
-                Step off your wooden veranda directly to river vistas where single-horned rhinos, marsh muggers, and jungle flora meet.
+                Relax in absolute peace and comfort. Our gated grounds are watched over by friendly local caretakers to keep your stay perfectly safe, quiet, and friendly.
               </p>
             </motion.div>
 
@@ -1071,33 +1208,18 @@ export default function App() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="bg-warm-white/60 p-8 rounded-xl border border-brass/15 hover:border-brass/45 hover:bg-white transition-all duration-300 shadow-sm relative group"
+              whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              className="bg-gradient-to-b from-white/95 to-warm-white/60 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-white transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(139,115,85,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(139,115,85,0.18)] relative group overflow-hidden"
             >
-              <div className="w-12 h-12 bg-teal-dark/5 rounded-lg flex items-center justify-center text-brass mb-6 group-hover:bg-teal-dark group-hover:text-warm-white transition-all duration-300">
-                <ShieldCheck className="w-6 h-6" />
+              <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">02</span>
+              
+              <div className="w-14 h-14 bg-teal-dark/5 rounded-xl flex items-center justify-center text-brass mb-6 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 shadow-sm">
+                <Award className="w-7 h-7" />
               </div>
-              <h4 className="font-serif text-xl font-bold text-teal-dark mb-2">Guarded Privacy & Security</h4>
+              
+              <h4 className="font-serif text-2xl font-bold text-teal-dark mb-3 group-hover:text-brass transition-colors">Warm Nepali Hospitality</h4>
               <p className="text-xs text-teal-dark/75 leading-relaxed">
-                Sleep in absolute tranquility with triple-redundant timber gates, bio-metric safes, and 24/7 dedicated patrol security team.
-              </p>
-            </motion.div>
-
-            {/* Highlight 3 */}
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="bg-warm-white/60 p-8 rounded-xl border border-brass/15 hover:border-brass/45 hover:bg-white transition-all duration-300 shadow-sm relative group"
-            >
-              <div className="w-12 h-12 bg-teal-dark/5 rounded-lg flex items-center justify-center text-brass mb-6 group-hover:bg-teal-dark group-hover:text-warm-white transition-all duration-300">
-                <Award className="w-6 h-6" />
-              </div>
-              <h4 className="font-serif text-xl font-bold text-teal-dark mb-2">Refined Nepali Hospitality</h4>
-              <p className="text-xs text-teal-dark/75 leading-relaxed">
-                Savor hand-pressed local tea, organic farm-to-table cuisine, and highly-trained private guides tailored to your pace.
+                Savor hand-prepared local tea, fresh farm-to-table meals cooked in our home kitchen, and gentle local wildlife walks guided by our knowledgeable naturalists.
               </p>
             </motion.div>
 
@@ -1111,13 +1233,16 @@ export default function App() {
           
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
             <div className="space-y-2">
-              <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Refined Accommodations</span>
+              <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Our Accommodations</span>
               <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
-                Our Signature Sanctuaries
+                Simple & Comfortable Rooms
               </h2>
+              <p className="text-sm text-teal-dark/70 leading-relaxed">
+                Choose from our cozy, nature-friendly rooms designed for a peaceful stay.
+              </p>
             </div>
             <p className="text-xs text-teal-dark/65 max-w-sm font-mono tracking-wide leading-relaxed">
-              * Rates shown in Nepalese Rupees (NPR). Guaranteed booking rate includes 10% hospitality security and comfort amenities.
+              * Rates shown in Nepalese Rupees (NPR). Simple pricing for a budget-friendly and authentic stay.
             </p>
           </div>
 
@@ -1133,18 +1258,13 @@ export default function App() {
                 className="bg-white rounded-lg border border-brass/25 hover:border-brass/50 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative group"
               >
                 {/* Clean Image Banner */}
-                <div className="relative h-48 overflow-hidden bg-teal-dark/5">
+                <div className="relative h-72 sm:h-96 overflow-hidden bg-teal-dark/5">
                   <img
                     src={room.imageUrl}
                     alt={room.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                     referrerPolicy="no-referrer"
                   />
-                  
-                  {/* Badge */}
-                  <div className="absolute top-3 left-3 bg-teal-dark/95 text-brass border border-brass/40 text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded">
-                    {room.highlight}
-                  </div>
                 </div>
 
                 {/* Simplified Info Box */}
@@ -1218,62 +1338,53 @@ export default function App() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-2xl mx-auto mb-16 space-y-4"
           >
-            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Uncompromising Standard Inclusive Services</span>
+            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Services Included</span>
             <h2 className="font-serif text-4xl md:text-5xl text-warm-white tracking-tight font-bold">
-              Included Amenities & Utilities
+              Included Amenities & Services
             </h2>
             <p className="text-sm text-warm-white/70">
-              We offer curated standard amenities free of charge to elevate your safari experience, alongside select high-security transfers to bridge Ratnanagar and the global map.
+              We provide essential amenities and simple comforts to make your jungle stay as pleasant and convenient as possible.
             </p>
           </motion.div>
 
-          {/* Interactive Icons Presentation Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {AMENITIES.map((amen, idx) => (
+          {/* Minimal Catalog-Style Amenities Presentation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 max-w-4xl mx-auto mt-6">
+            {amenities.map((amen, idx) => (
               <motion.div 
                 key={amen.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                whileHover={{ scale: 1.02, y: -4, transition: { duration: 0.2 } }}
-                className="bg-teal-mid/60 border border-brass/20 hover:border-brass/55 rounded-xl p-6 text-center space-y-4 hover:bg-teal-mid/90 transition-all duration-300 shadow-lg group"
+                transition={{ duration: 0.5, delay: idx * 0.05 }}
+                className="flex items-start gap-4 pb-4 border-b border-brass/10 hover:border-brass/35 transition-all duration-300 group"
               >
-                <div className="mx-auto w-12 h-12 bg-warm-white/5 rounded-full flex items-center justify-center text-brass group-hover:scale-110 transition-transform duration-300 border border-brass/10">
+                {/* Compact Circular Icon */}
+                <div className="w-9 h-9 rounded-full bg-brass/10 flex items-center justify-center text-brass shrink-0 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 border border-brass/15">
                   {renderAmenityIcon(amen.iconName)}
                 </div>
-                
-                <div className="space-y-1">
-                  <h4 className="font-serif text-lg font-bold text-warm-white">{amen.name}</h4>
-                  
-                  {/* Category Pill Tag */}
-                  <span className={`inline-block text-xs uppercase font-mono tracking-wide px-2.5 py-1 rounded ${amen.category === 'Free' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}`}>
-                    {amen.category} Services
-                  </span>
-                </div>
 
-                <p className="text-sm text-warm-white/75 leading-relaxed">
-                  {amen.description}
-                </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-serif text-base font-bold text-warm-white group-hover:text-brass transition-colors">
+                      {amen.name}
+                    </h4>
+                    <span className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded shrink-0 border ${
+                      amen.category === 'Free' 
+                        ? 'border-emerald-700/40 text-emerald-400 bg-emerald-950/40' 
+                        : 'border-amber-700/40 text-amber-400 bg-amber-950/40'
+                    }`}>
+                      {amen.category}
+                    </span>
+                  </div>
+                  <p className="text-xs text-warm-white/70 leading-relaxed max-w-md">
+                    {amen.description}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
 
-          {/* Bottom Security / Trust Seal */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="mt-16 text-center max-w-xl mx-auto bg-teal-mid/40 border border-brass/10 rounded-xl p-6"
-          >
-            <p className="text-sm text-brass font-mono uppercase tracking-wider font-semibold mb-1.5 flex justify-center items-center gap-1.5">
-              🔐 24/7 Redundant Emergency Guard System
-            </p>
-            <p className="text-sm text-warm-white/80 leading-relaxed">
-              Every package is safeguarded under the highest level of Nepal nature lodge standards. Digital backup generator logs and automated physical security locks secure sound sleep.
-            </p>
-          </motion.div>
+
 
         </div>
       </section>
@@ -1289,20 +1400,20 @@ export default function App() {
         >
           
           <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Visual Sanctuary</span>
+            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Lodge Views</span>
             <h2 className="font-serif text-4xl font-bold tracking-tight text-teal-dark">
               Explore Our Lodge Grounds
             </h2>
             <p className="text-sm text-teal-dark/70">
-              Immerse yourself in high-resolution snapshots of local single-horned rhinos, bush dining setups, and wooden master suite structures.
+              Browse through photos of our peaceful gardens, comfortable rooms, and the beautiful surrounding wildlife of Chitwan.
             </p>
           </div>
 
           {/* Gallery Items sliding carousel with dynamic layout transitions */}
-          <div className="relative max-w-5xl mx-auto px-4 md:px-12 mb-10 group">
+          <div className="relative max-w-7xl mx-auto px-4 md:px-12 mb-10 group">
             
             {/* Main Interactive Stage */}
-            <div className="relative h-[320px] sm:h-[450px] md:h-[500px] lg:h-[550px] w-full bg-teal-dark/10 rounded-2xl overflow-hidden border border-brass/20 shadow-xl">
+            <div className="relative h-[400px] sm:h-[550px] md:h-[650px] lg:h-[750px] w-full bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-200 shadow-md">
               {filteredGallery.length > 0 ? (
                 <AnimatePresence initial={false} custom={slideDirection} mode="wait">
                   <motion.div
@@ -1332,35 +1443,6 @@ export default function App() {
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                       referrerPolicy="no-referrer"
                     />
-                    
-                    {/* Multi-layered cinematic overlay shadow */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
-
-                    {/* Content Details on active slide */}
-                    <div className="relative p-6 sm:p-10 md:p-12 text-warm-white space-y-2 pointer-events-none max-w-xl">
-                      <motion.span 
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="inline-block px-3 py-1 bg-brass text-teal-dark text-[10px] font-mono font-bold uppercase tracking-widest rounded-full"
-                      >
-                        {filteredGallery[galleryIndex]?.category}
-                      </motion.span>
-                      <motion.h3 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 }}
-                        className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-warm-white"
-                      >
-                        {filteredGallery[galleryIndex]?.title}
-                      </motion.h3>
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-brass animate-pulse" />
-                        <span className="text-xs font-mono text-warm-white/70 tracking-wider">
-                          Ratnanagar, Chitwan NP
-                        </span>
-                      </div>
-                    </div>
                   </motion.div>
                 </AnimatePresence>
               ) : (
@@ -1427,52 +1509,115 @@ export default function App() {
         >
           
           <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <span className="text-sm uppercase tracking-widest font-mono text-brass font-bold">Unedited Guest Memoirs</span>
+            <span className="text-sm uppercase tracking-widest font-mono text-brass font-bold">Guest Reviews</span>
             <h2 className="font-serif text-4xl text-teal-dark font-bold">
-              Echoes From the Jungle Edge
+              What Our Guests Say
             </h2>
-            <p className="text-base text-teal-dark/70">
-              Read real stories left by our global adventurers who sought the pristine wilderness and comfortable hospitality of Ratnanagar.
+            <p className="text-sm text-teal-dark/70">
+              Read real stories left by guests who enjoyed their nature stays and wildlife experiences with us.
             </p>
           </div>
 
-          {/* Testimonial Cards Slider/Block */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((test, idx) => (
-              <motion.div 
-                key={test.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                className="bg-warm-white p-5 md:p-6 rounded-lg border border-brass/15 flex flex-col justify-between shadow-sm relative hover:shadow-md transition-all duration-300"
-              >
-                {/* Decorative quote mark */}
-                <span className="absolute top-2 right-4 text-brass/20 font-serif text-5xl select-none">“</span>
+          {/* Testimonial sliding carousel with custom slide direction and touch drag support */}
+          <div className="relative max-w-3xl mx-auto px-4 md:px-12 mb-10 group">
+            
+            {/* Main Interactive Stage */}
+            <div className="relative h-[360px] sm:h-[300px] w-full bg-warm-white rounded-2xl overflow-hidden border border-brass/25 shadow-md flex flex-col justify-between">
+              {testimonials.length > 0 ? (
+                <AnimatePresence initial={false} custom={reviewsDirection} mode="wait">
+                  <motion.div
+                    key={testimonials[reviewsIndex]?.id || reviewsIndex}
+                    custom={reviewsDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.6}
+                    onDragEnd={(e, { offset }) => {
+                      const swipe = offset.x;
+                      if (swipe < -60) {
+                        handleNextReview();
+                      } else if (swipe > 60) {
+                        handlePrevReview();
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none flex flex-col justify-between p-6 sm:p-10"
+                  >
+                    {/* Decorative quote mark */}
+                    <span className="absolute top-4 right-8 text-brass/15 font-serif text-8xl select-none">“</span>
 
-                <div className="space-y-3">
-                  {/* Rating Stars */}
-                  <div className="flex gap-1">
-                    {Array.from({ length: test.rating }).map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 text-brass fill-brass" />
-                    ))}
-                  </div>
+                    <div className="space-y-4">
+                      {/* Rating Stars */}
+                      <div className="flex gap-1">
+                        {Array.from({ length: testimonials[reviewsIndex]?.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-4.5 h-4.5 text-brass fill-brass" />
+                        ))}
+                      </div>
 
-                  <p className="text-sm text-teal-dark/85 leading-relaxed italic font-serif">
-                    "{test.comment}"
-                  </p>
+                      <p className="text-sm sm:text-base text-teal-dark/90 italic font-serif leading-relaxed">
+                        "{testimonials[reviewsIndex]?.comment}"
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-teal-dark/10 flex items-center justify-between">
+                      <div>
+                        <h5 className="text-xs sm:text-sm font-mono uppercase text-teal-dark font-bold tracking-wider">{testimonials[reviewsIndex]?.name}</h5>
+                        <span className="text-xs text-teal-dark/50">{testimonials[reviewsIndex]?.origin}</span>
+                      </div>
+                      <span className="text-xs text-brass uppercase font-mono font-bold">{testimonials[reviewsIndex]?.date}</span>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-teal-dark bg-warm-cream">
+                  <span className="font-mono text-xs">No reviews left yet</span>
                 </div>
+              )}
+            </div>
 
-                <div className="pt-4 mt-4 border-t border-teal-dark/5 flex items-center justify-between">
-                  <div>
-                    <h5 className="text-xs font-mono uppercase text-teal-dark font-bold tracking-wider">{test.name}</h5>
-                    <span className="text-xs text-teal-dark/50">{test.origin}</span>
-                  </div>
-                  <span className="text-xs text-brass uppercase font-mono font-bold">{test.date}</span>
+            {/* Slider Navigation Arrows */}
+            {testimonials.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevReview}
+                  className="absolute left-[-16px] md:left-[-24px] top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                  aria-label="Previous Review"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNextReview}
+                  className="absolute right-[-16px] md:right-[-24px] top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                  aria-label="Next Review"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+
+            {/* Indicator Dots & Slide Counter info */}
+            {testimonials.length > 1 && (
+              <div className="flex items-center justify-between mt-6 px-2">
+                <span className="text-xs font-mono text-teal-dark/65 font-bold tracking-wide">
+                  {(reviewsIndex + 1).toString().padStart(2, '0')} <span className="text-brass">/</span> {testimonials.length.toString().padStart(2, '0')}
+                </span>
+                <div className="flex gap-2.5">
+                  {testimonials.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setReviewsDirection(idx > reviewsIndex ? 'right' : 'left');
+                        setReviewsIndex(idx);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${idx === reviewsIndex ? 'bg-brass w-8 border border-teal-dark/30' : 'bg-teal-dark/20 w-2 hover:bg-teal-dark/50'}`}
+                      aria-label={`Go to review slide ${idx + 1}`}
+                    />
+                  ))}
                 </div>
-              </motion.div>
-            ))}
+              </div>
+            )}
           </div>
 
         </motion.div>
@@ -1493,12 +1638,12 @@ export default function App() {
               className="lg:col-span-5 space-y-8"
             >
               <div className="space-y-4">
-                <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Get In Touch Directly</span>
+                <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Get In Touch</span>
                 <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
-                  Reach Our Sanctuary
+                  Reach Our Lodge
                 </h2>
                 <p className="text-sm text-teal-dark/70 leading-relaxed">
-                  Experience the beauty of the wild at Safari Wildlife Lodge & Camp, where guests can enjoy comfortable accommodations, warm hospitality, and close encounters with nature.
+                  Contact us anytime to ask questions or get help with planning your cozy stay in Chitwan.
                 </p>
               </div>
 
@@ -1531,18 +1676,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* WhatsApp Help link */}
-                <div className="flex items-start gap-3.5 p-3 rounded-lg bg-warm-cream/30 border border-brass/10">
-                  <div className="w-8 h-8 rounded-full bg-teal-dark/5 flex items-center justify-center text-brass shrink-0">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h5 className="font-serif font-bold text-teal-dark uppercase tracking-wider text-xs mb-0.5">Operating Hours</h5>
-                    <p className="text-teal-dark/70 text-xs">
-                      Front Desk open 24/7. Safari bookings operate sunrise to sunset.
-                    </p>
-                  </div>
-                </div>
+
 
               </div>
             </motion.div>
@@ -1563,9 +1697,20 @@ export default function App() {
                 </p>
 
                 {contactSuccess ? (
-                  <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 text-sm p-4 rounded-lg leading-relaxed font-medium">
-                    ✨ <strong>Enquiry Dispatched Successfully!</strong> <br />
-                    Your credentials have been securely stored in our temporary enquiry registry. An official safari coordinator will verify booking limits and reach out with tailored package offers shortly.
+                  <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 text-sm p-5 rounded-lg leading-relaxed space-y-3 font-medium">
+                    <div>
+                      ✨ <strong className="text-emerald-950">Enquiry Dispatched Successfully!</strong> <br />
+                      Your credentials have been securely registered. We have also opened your email client to send this message directly to our official mailbox: <strong className="text-emerald-950">{gmailEnquiryTarget}</strong>.
+                    </div>
+                    <div className="text-[10px] text-emerald-700/80 font-mono border-t border-emerald-200/50 pt-2 flex flex-wrap justify-between items-center gap-2">
+                      <span>Destination: {gmailEnquiryTarget}</span>
+                      <a 
+                        href={`mailto:${gmailEnquiryTarget}`}
+                        className="underline font-bold text-emerald-900 hover:text-emerald-950"
+                      >
+                        Resend Direct Email
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <form onSubmit={handleContactSubmit} className="space-y-3.5 text-sm font-mono">
@@ -1662,7 +1807,7 @@ export default function App() {
             <h5 className="text-xs uppercase font-mono tracking-widest text-brass font-bold">Lodge Navigation</h5>
             <ul className="space-y-2 text-xs text-warm-white/70 font-mono">
               <li><a href="#home" className="hover:text-brass transition-colors">Hero Home</a></li>
-              <li><a href="#suites" className="hover:text-brass transition-colors">Luxury Suites</a></li>
+              <li><a href="#suites" className="hover:text-brass transition-colors">Our Rooms</a></li>
               <li><a href="#amenities" className="hover:text-brass transition-colors">Amenities Included</a></li>
               <li><a href="#gallery" className="hover:text-brass transition-colors">Lodge Gallery</a></li>
               <li><a href="#contact" className="hover:text-brass transition-colors">Contact Support</a></li>
@@ -1686,13 +1831,13 @@ export default function App() {
               Follow our wildlife sightings and conservation logs via digital streams.
             </p>
             <div className="flex gap-4 text-warm-white/75">
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Instagram">
+              <a href={instagramUrl} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Instagram">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Facebook">
+              <a href={facebookUrl} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Facebook">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="https://api.whatsapp.com/send?phone=9779700863273" target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="WhatsApp Chat">
+              <a href={`https://api.whatsapp.com/send?phone=${whatsappPhone}`} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="WhatsApp Chat">
                 <MessageCircle className="w-5 h-5" />
               </a>
             </div>
@@ -1824,7 +1969,7 @@ export default function App() {
                   }}
                   className="w-full py-3 bg-teal-dark hover:bg-teal-mid text-brass border border-brass/40 font-serif text-sm uppercase tracking-widest font-bold transition-all rounded shadow-md text-center cursor-pointer"
                 >
-                  Book Luxury Suite
+                  Book Your Room
                 </button>
                 <div className="text-center font-mono">
                   <span className="block text-[9px] uppercase tracking-widest text-teal-dark/50">Direct Desk Hotline</span>
@@ -1912,11 +2057,12 @@ export default function App() {
 
             {/* Tab Nav */}
             <div className="bg-zinc-900/60 px-6 py-2 border-b border-zinc-800 flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0">
-              {(['rooms', 'gallery', 'hero', 'reviews', 'leads', 'backup'] as const).map((tab) => {
+              {(['rooms', 'gallery', 'amenities', 'hero', 'reviews', 'leads', 'backup'] as const).map((tab) => {
                 const isActive = adminTab === tab;
                 const labels = {
                   rooms: '🏨 Manage Suites',
                   gallery: '🖼️ Manage Gallery Slider hover',
+                  amenities: '✨ Manage Amenities',
                   hero: '🌅 Logo & Banner',
                   reviews: '⭐ Manage Reviews',
                   leads: '🗳️ Guest Leads & Enquiries',
@@ -1969,7 +2115,7 @@ export default function App() {
                     {editingRoomId !== null ? (
                       <div className="bg-zinc-900/80 p-6 rounded border border-brass/35 space-y-4 max-w-3xl">
                         <h5 className="font-bold text-brass uppercase tracking-widest font-mono text-xs">
-                          {editingRoomId === 'new' ? '✨ CREATE NEW LUXURY SUITE' : '✏️ EDIT ACTIVE SUITE DETAILS'}
+                          {editingRoomId === 'new' ? '✨ CREATE NEW ROOM' : '✏️ EDIT ACTIVE ROOM DETAILS'}
                         </h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1980,7 +2126,7 @@ export default function App() {
                               disabled={editingRoomId !== 'new'}
                               onChange={(e) => setRoomForm({ ...roomForm, id: e.target.value })}
                               className="w-full bg-zinc-950 border border-zinc-805 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 disabled:opacity-50"
-                              placeholder="luxury-suite"
+                              placeholder="deluxe-room"
                             />
                           </div>
                           <div>
@@ -2339,6 +2485,149 @@ export default function App() {
                   </motion.div>
                 )}
 
+                {adminTab === 'amenities' && (
+                  <motion.div
+                    key="amenities"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex justify-between items-center bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                      <div>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Lodge Amenities & Services ({amenities.length})</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono font-normal">Manage the list of included free and paid services displayed on the front page.</p>
+                      </div>
+                      {editingAmenityId === null && (
+                        <button
+                          onClick={startAddAmenity}
+                          className="px-3 py-1.5 bg-brass text-teal-dark hover:bg-brass-light font-mono text-xs uppercase tracking-wider font-bold rounded flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Amenity
+                        </button>
+                      )}
+                    </div>
+
+                    {editingAmenityId !== null ? (
+                      <div className="bg-zinc-900/80 p-6 rounded border border-brass/35 space-y-4 max-w-3xl">
+                        <h5 className="font-bold text-brass uppercase tracking-widest font-mono text-xs">
+                          {editingAmenityId === 'new' ? '✨ CREATE NEW AMENITY' : '✏️ EDIT AMENITY DETAILS'}
+                        </h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Amenity Name</label>
+                            <input
+                              type="text"
+                              value={amenityForm.name || ''}
+                              onChange={(e) => setAmenityForm({ ...amenityForm, name: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass/50 focus:outline-none"
+                              placeholder="e.g. Free Wi-Fi"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Category</label>
+                            <select
+                              value={amenityForm.category || 'Free'}
+                              onChange={(e) => setAmenityForm({ ...amenityForm, category: e.target.value as 'Free' | 'Paid' })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-brass/50 focus:outline-none"
+                            >
+                              <option value="Free">Free Service</option>
+                              <option value="Paid">Paid/Premium Service</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Lucide Icon Option</label>
+                            <select
+                              value={amenityForm.iconName || 'Compass'}
+                              onChange={(e) => setAmenityForm({ ...amenityForm, iconName: e.target.value })}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-brass/50 focus:outline-none"
+                            >
+                              <option value="Wifi">📶 Wifi</option>
+                              <option value="Utensils">🍲 Utensils / Dinings</option>
+                              <option value="Car">🚗 Airport Car Transfer</option>
+                              <option value="Plane">✈️ Flight Booking Help</option>
+                              <option value="Sparkles">✨ Sparkles / Deluxe Service</option>
+                              <option value="ShieldCheck">🛡️ ShieldCheck / High Security</option>
+                              <option value="Award">🏆 Award / Local Guide</option>
+                              <option value="Clock">⏰ Clock / 24h Desk</option>
+                              <option value="Compass">🧭 Compass / Tours</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Short Description</label>
+                          <textarea
+                            value={amenityForm.description || ''}
+                            onChange={(e) => setAmenityForm({ ...amenityForm, description: e.target.value })}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass/50 focus:outline-none h-20 resize-none"
+                            placeholder="Briefly detail what is included with this service..."
+                          />
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={saveAmenity}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer transition"
+                          >
+                            Save Amenity
+                          </button>
+                          <button
+                            onClick={() => setEditingAmenityId(null)}
+                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 font-bold text-xs uppercase font-mono tracking-wider rounded cursor-pointer transition"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Amenities list grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {amenities.map((amen) => (
+                        <div key={amen.id} className="bg-zinc-900/40 rounded border border-zinc-850 p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-zinc-800 rounded text-brass flex items-center justify-center">
+                                  {renderAmenityIcon(amen.iconName)}
+                                </div>
+                                <span className="font-serif font-bold text-zinc-100 text-sm">{amen.name}</span>
+                              </div>
+                              <span className={`text-[9px] uppercase font-mono tracking-wider px-2 py-0.5 rounded ${amen.category === 'Free' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50' : 'bg-amber-950/80 text-amber-400 border border-amber-900/50'}`}>
+                                {amen.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-400 leading-relaxed min-h-[36px]">{amen.description}</p>
+                            <div className="text-[10px] text-zinc-500 font-mono">Icon: {amen.iconName}</div>
+                          </div>
+                          
+                          <div className="flex gap-4 pt-3 border-t border-zinc-800/60 mt-3">
+                            <button
+                              onClick={() => startEditAmenity(amen)}
+                              className="text-xs text-brass hover:text-white font-bold flex items-center gap-1 cursor-pointer transition"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              Edit details
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete ${amen.name}?`)) {
+                                  deleteAmenity(amen.id);
+                                }
+                              }}
+                              className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 cursor-pointer transition ml-auto"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
                 {adminTab === 'hero' && (
                   <motion.div
                     key="hero"
@@ -2412,6 +2701,30 @@ export default function App() {
                             </span>
                             <span className="text-[9px] text-zinc-500 font-mono mt-1.5">Supports high-res PNG, JPG, or transparent SVGs</span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gmail Target Coordinates */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">✉️ Gmail Coordinates for Wilderness Enquiries</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Specify the destination Gmail mailbox where contact form entries and custom booking inquiries should be dispatched.</p>
+                      </div>
+
+                      <div className="bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 space-y-4 max-w-3xl">
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Destination Gmail Address</label>
+                          <input
+                            type="email"
+                            value={gmailEnquiryTarget}
+                            onChange={(e) => {
+                              setGmailEnquiryTarget(e.target.value);
+                              localStorage.setItem('safari_enquiry_gmail', e.target.value);
+                            }}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                            placeholder="e.g. safarilodgechitwan@gmail.com"
+                          />
                         </div>
                       </div>
                     </div>
@@ -2523,6 +2836,81 @@ export default function App() {
                               </button>
                             )}
                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separator line */}
+                    <hr className="border-zinc-800" />
+
+                    {/* Social Media Links Section */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Social Media Coordinates</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Link your digital channels so guests can follow your wilderness adventure streams directly from the footer.</p>
+                      </div>
+
+                      <div className="bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 space-y-4 max-w-3xl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Instagram URL</label>
+                            <input
+                              type="text"
+                              value={instagramUrl}
+                              onChange={(e) => {
+                                setInstagramUrl(e.target.value);
+                                localStorage.setItem('safari_social_instagram', e.target.value);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                              placeholder="e.g. https://instagram.com/yourlodgename"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Facebook URL</label>
+                            <input
+                              type="text"
+                              value={facebookUrl}
+                              onChange={(e) => {
+                                setFacebookUrl(e.target.value);
+                                localStorage.setItem('safari_social_facebook', e.target.value);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                              placeholder="e.g. https://facebook.com/yourlodgename"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">WhatsApp Number (For Direct Chats & Widget)</label>
+                            <input
+                              type="text"
+                              value={whatsappPhone}
+                              onChange={(e) => {
+                                setWhatsappPhone(e.target.value);
+                                localStorage.setItem('safari_social_whatsapp', e.target.value);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                              placeholder="e.g. 9779700863273"
+                            />
+                            <span className="text-[10px] text-zinc-500 font-mono block mt-1">Please include country code without space or '+' symbol (e.g. 977XXXXXXXXXX for Nepal). This powers the floating WhatsApp button!</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            onClick={() => {
+                              setInstagramUrl('https://instagram.com');
+                              setFacebookUrl('https://facebook.com');
+                              setWhatsappPhone('9779700863273');
+                              localStorage.removeItem('safari_social_instagram');
+                              localStorage.removeItem('safari_social_facebook');
+                              localStorage.removeItem('safari_social_whatsapp');
+                              triggerAdminStatus('🔄 Social coordinates reset to defaults!');
+                            }}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-400 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                          >
+                            Reset Socials to Defaults
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -2703,42 +3091,72 @@ export default function App() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Active Reservations */}
+                    <div className="max-w-3xl mx-auto space-y-8">
+                      {/* Room Reservations */}
                       <div className="space-y-3">
                         <div className="bg-zinc-900 px-4 py-2 border border-zinc-800 rounded flex justify-between items-center">
                           <span className="font-serif text-sm font-bold text-brass flex items-center gap-1.5">
-                            🏨 Suite Bookings ({activeBookings.length})
+                            🏨 Room Reservations & Bookings ({activeBookings.length})
                           </span>
                         </div>
 
                         {activeBookings.length === 0 ? (
-                          <div className="bg-zinc-900/20 text-center py-12 rounded border border-zinc-950">
-                            <p className="font-mono text-xs text-zinc-500">No bookings logged on this device yet.</p>
+                          <div className="bg-zinc-900/20 text-center py-8 rounded border border-zinc-950">
+                            <p className="font-mono text-xs text-zinc-500">No room bookings submitted yet.</p>
                           </div>
                         ) : (
                           <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {activeBookings.map((bk) => (
-                              <div key={bk.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded relative group">
-                                <span className="absolute top-3 right-4 font-mono text-[9px] text-emerald-400 border border-emerald-400/30 px-1 rounded uppercase bg-emerald-400/5">
-                                  CONFIRMED
-                                </span>
-                                <h5 className="font-bold text-zinc-200 font-mono text-xs select-all">Booking ID: {bk.id}</h5>
-                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-850 text-xs text-zinc-400 font-mono">
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Guest:</span> <strong className="text-white">{bk.guestName}</strong></p>
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Suite Selected:</span> <strong className="text-brass">{bk.roomName}</strong></p>
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Contact No:</span> <strong className="text-zinc-300">{bk.contactValue}</strong></p>
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Duration:</span> <strong className="text-zinc-300">{bk.checkIn} to {bk.checkOut}</strong></p>
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Guests count:</span> <strong className="text-zinc-300">{bk.guestsCount}</strong></p>
-                                  <p><span className="text-zinc-500 uppercase text-[10px]">Total Pricing:</span> <strong className="text-teal-400">{bk.totalPricing} NPR</strong></p>
+                            {activeBookings.map((b) => (
+                              <div key={b.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded text-xs leading-relaxed space-y-2 relative group">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="font-bold text-zinc-200 text-sm flex items-center gap-2">
+                                      <span>{b.guestName}</span>
+                                      <span className="text-[10px] font-mono font-normal bg-teal-950 text-teal-400 border border-teal-900/60 px-1.5 py-0.2 rounded uppercase">
+                                        {b.status}
+                                      </span>
+                                    </h5>
+                                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                                      Contact: <span className="text-zinc-200 font-medium">{b.contactValue}</span> | ID: <span className="font-mono text-brass font-bold">{b.id}</span>
+                                    </p>
+                                  </div>
+                                  <span className="text-xs font-mono font-bold text-brass">
+                                    Rs {b.pricingNpr?.toLocaleString('en-NP') || '0'}
+                                  </span>
                                 </div>
-                                <div className="flex justify-end pt-3 mt-2 border-t border-zinc-805/30">
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-zinc-950/50 p-2 rounded border border-zinc-900 text-[11px] font-mono text-zinc-400">
+                                  <div>
+                                    <span className="block text-[9px] text-zinc-500 uppercase">Suite Selected</span>
+                                    <strong className="text-zinc-200 font-serif">{b.roomName}</strong>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[9px] text-zinc-500 uppercase">Arrival Date</span>
+                                    <strong className="text-zinc-200">{b.checkIn}</strong>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[9px] text-zinc-500 uppercase">Departure Date</span>
+                                    <strong className="text-zinc-200">{b.checkOut}</strong>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[9px] text-zinc-500 uppercase">Guests Count</span>
+                                    <strong className="text-zinc-200">{b.guestsCount} Guest{b.guestsCount > 1 ? 's' : ''}</strong>
+                                  </div>
+                                </div>
+
+                                {b.message && (
+                                  <div className="bg-zinc-950 p-2.5 rounded border border-zinc-850/60 text-zinc-300">
+                                    <span className="block text-[9px] font-mono text-zinc-500 uppercase mb-0.5">Guest Thoughts / Message:</span>
+                                    <p className="italic">"{b.message}"</p>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end pt-1">
                                   <button
-                                    onClick={() => deleteBooking(bk.id)}
-                                    className="text-[10px] text-red-500 hover:text-red-400 hover:underline font-mono uppercase font-bold flex items-center gap-0.5 cursor-pointer"
+                                    onClick={() => deleteBooking(b.id)}
+                                    className="text-[10px] text-red-400 hover:text-red-300 hover:underline"
                                   >
-                                    <Trash2 className="w-3 h-3" />
-                                    Cancel & Delete Booking
+                                    Delete Booking
                                   </button>
                                 </div>
                               </div>
@@ -2756,7 +3174,7 @@ export default function App() {
                         </div>
 
                         {enquiries.length === 0 ? (
-                          <div className="bg-zinc-900/20 text-center py-12 rounded border border-zinc-950">
+                          <div className="bg-zinc-900/20 text-center py-8 rounded border border-zinc-950">
                             <p className="font-mono text-xs text-zinc-500">No contact enquiries submitted yet.</p>
                           </div>
                         ) : (

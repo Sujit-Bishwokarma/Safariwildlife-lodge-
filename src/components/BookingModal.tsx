@@ -24,6 +24,7 @@ export default function BookingModal({
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guestsCount, setGuestsCount] = useState(2);
+  const [message, setMessage] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -36,6 +37,8 @@ export default function BookingModal({
     }
   }, [selectedRoom, rooms]);
 
+  const resolvedRoom = rooms.find(r => r.id === activeRoom?.id) || activeRoom || (rooms.length > 0 ? rooms[0] : null);
+
   const calculateDays = () => {
     if (!checkIn || !checkOut) return 1;
     const start = new Date(checkIn);
@@ -45,7 +48,7 @@ export default function BookingModal({
     return diffDays > 0 ? diffDays : 1;
   };
 
-  const currentPrice = activeRoom ? activeRoom.priceNpr : 18500;
+  const currentPrice = resolvedRoom ? resolvedRoom.priceNpr : 18500;
   const numDays = calculateDays();
   const subtotal = currentPrice * numDays;
   const serviceCharge = Math.round(subtotal * 0.1); // 10% standard service charge
@@ -71,10 +74,11 @@ export default function BookingModal({
       checkIn,
       checkOut,
       guestsCount,
-      roomId: activeRoom?.id || 'unknown',
-      roomName: activeRoom?.name || 'Deluxe Room',
+      roomId: resolvedRoom?.id || 'unknown',
+      roomName: resolvedRoom?.name || 'Deluxe Room',
       status: 'pending',
-      pricingNpr: totalPricing
+      pricingNpr: totalPricing,
+      message: message.trim() || undefined
     };
 
     // Save to local storage
@@ -93,8 +97,9 @@ export default function BookingModal({
           checkIn,
           checkOut,
           guestsCount: guestsCount.toString(),
-          roomName: activeRoom?.name || 'Deluxe Room',
-          totalPricing: totalPricing + " NPR"
+          roomName: resolvedRoom?.name || 'Deluxe Room',
+          totalPricing: totalPricing + " NPR",
+          message
         };
 
         Object.entries(inputs).forEach(([key, val]) => {
@@ -135,6 +140,7 @@ export default function BookingModal({
     setCheckIn('');
     setCheckOut('');
     setGuestsCount(2);
+    setMessage('');
     setIsSubmitted(false);
     onClose();
   };
@@ -200,7 +206,7 @@ export default function BookingModal({
                     Select Suite
                   </label>
                   <select
-                    value={activeRoom?.id}
+                    value={resolvedRoom?.id}
                     onChange={(e) => {
                       const next = rooms.find(r => r.id === e.target.value);
                       if (next) setActiveRoom(next);
@@ -283,20 +289,28 @@ export default function BookingModal({
                   <input
                     type="number"
                     min={1}
-                    max={activeRoom?.capacity || 4}
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(Number(e.target.value))}
                     className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass font-mono"
                   />
-                  <span className="text-[10px] text-teal-dark/50 block mt-0.5">Max capacity: {activeRoom?.capacity || 4} guests</span>
+                </div>
+
+                {/* Thoughts/Message/Special Requests Description Box */}
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-teal-dark/65 font-bold font-mono block">
+                    Your Thoughts / Message
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Tell us about special requests, bedding preferences, or queries..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full bg-warm-cream border border-brass/35 text-teal-dark rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/35 resize-none"
+                  />
                 </div>
 
                 {/* Direct payment note */}
                 <div className="bg-brass/10 border border-brass/25 rounded-xl p-3 text-[11px] text-teal-dark/75 leading-relaxed space-y-1">
-                  <div className="flex justify-between font-semibold">
-                    <span>Est. Space Value:</span>
-                    <span>{totalPricing.toLocaleString('en-NP')} NPR</span>
-                  </div>
                   <p className="text-[9.5px] text-teal-dark/65 leading-normal">
                     🔒 No online deposit required today. You pay at checkout via Card, Cash, or QR.
                   </p>
@@ -323,7 +337,7 @@ export default function BookingModal({
                 </div>
                 <h4 className="font-serif text-2xl text-teal-dark font-bold">Sanctuary Reserved!</h4>
                 <p className="text-xs text-teal-dark/80 max-w-xs leading-relaxed">
-                  Thank you, <strong>{guestName}</strong>. Your luxury suite <span className="text-brass font-bold">{activeRoom?.name}</span> is provisionally reserved under direct booking.
+                  Thank you, <strong>{guestName}</strong>. Your luxury suite <span className="text-brass font-bold">{resolvedRoom?.name}</span> is provisionally reserved under direct booking.
                 </p>
 
                 <div className="bg-warm-cream border border-brass/25 rounded-xl p-3.5 w-full text-left space-y-1.5 text-xs max-w-sm">

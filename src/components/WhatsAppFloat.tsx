@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 
 export default function WhatsAppFloat() {
-  const hotelPhone = '9779700863273'; // Ratnanagar 970-0863273 mapped to Nepal country code
+  const hotelPhone = localStorage.getItem('safari_social_whatsapp') || '9779700863273'; // Ratnanagar 970-0863273 mapped to Nepal country code
   const defaultMessage = 'Namaste! I would like to inquire about room availability, packages, and safari booking details.';
 
   const handleRedirect = () => {

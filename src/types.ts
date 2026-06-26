@@ -48,4 +48,5 @@ export interface BookingSubmission {
   roomName: string;
   status: 'pending' | 'confirmed';
   pricingNpr: number;
+  message?: string;
 }

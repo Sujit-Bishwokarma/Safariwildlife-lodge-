@@ -43,8 +43,8 @@ export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFA
 export const ROOMS: Room[] = [
   {
     id: 'luxury-suite',
-    name: 'Luxury Suite',
-    description: 'A beautifully designed, spacious suite featuring high ceilings, warm timber accents, premium king-size bedding, and large windows that fill the space with clear natural light.',
+    name: 'Deluxe Room',
+    description: 'A beautifully designed, spacious room featuring warm timber accents, cozy bedding, and large windows that fill the space with clear natural light.',
     size: '55 m²',
     bedType: '1 Extra-Large King Bed',
     capacity: 2,
@@ -65,7 +65,7 @@ export const ROOMS: Room[] = [
     bedType: '1 King Bed or 2 Twin Beds',
     capacity: 2,
     view: 'Resort Courtyard & Garden View',
-    priceNpr: 14500,
+    priceNpr: 12500,
     imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
     amenities: [
       'Air Conditioning',
@@ -87,21 +87,21 @@ export const AMENITIES: Amenity[] = [
     id: 'breakfast',
     name: 'Organic Breakfast',
     category: 'Free',
-    description: 'Delicious hot breakfast buffet featuring local organic grains and honey.',
+    description: 'Delicious hot breakfast buffet featuring local organic options.',
     iconName: 'Utensils'
   },
   {
     id: 'parking',
     name: 'Secure Parking',
     category: 'Free',
-    description: 'Spacious gated parking area with 24-hour wardens.',
+    description: 'Spacious gated parking area with 24-hour security.',
     iconName: 'Car'
   },
   {
     id: 'airport-transfer',
     name: 'Airport Transfer',
     category: 'Paid',
-    description: 'Chauffeured robust 4x4 pickup & drop-off to Bharatpur Airport (NPR 4,500 return).',
+    description: 'Convenient taxi pickup and drop-off service to Bharatpur Airport arranged on request.',
     iconName: 'Plane'
   }
 ];
@@ -123,7 +123,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     id: 'g3',
     category: 'Lodge',
     imageUrl: SAFARI_SUITE_ROOM,
-    title: 'Safari Luxury Suite Master Bed layout'
+    title: 'Safari Deluxe Room Master Bed layout'
   },
   {
     id: 'g4',
