@@ -334,7 +334,7 @@ export default function App() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   // Admin states & forms
-  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'amenities' | 'hero' | 'reviews' | 'leads' | 'backup'>('rooms');
+  const [adminTab, setAdminTab] = useState<'rooms' | 'gallery' | 'amenities' | 'hero' | 'reviews' | 'backup'>('rooms');
   const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
   const [compressingImage, setCompressingImage] = useState(false);
 
@@ -2057,7 +2057,7 @@ export default function App() {
 
             {/* Tab Nav */}
             <div className="bg-zinc-900/60 px-6 py-2 border-b border-zinc-800 flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0">
-              {(['rooms', 'gallery', 'amenities', 'hero', 'reviews', 'leads', 'backup'] as const).map((tab) => {
+              {(['rooms', 'gallery', 'amenities', 'hero', 'reviews', 'backup'] as const).map((tab) => {
                 const isActive = adminTab === tab;
                 const labels = {
                   rooms: '🏨 Manage Suites',
@@ -2065,7 +2065,6 @@ export default function App() {
                   amenities: '✨ Manage Amenities',
                   hero: '🌅 Logo & Banner',
                   reviews: '⭐ Manage Reviews',
-                  leads: '🗳️ Guest Leads & Enquiries',
                   backup: '⚙️ JSON Backup System'
                 };
                 return (
@@ -2073,7 +2072,6 @@ export default function App() {
                     key={tab}
                     onClick={() => {
                       setAdminTab(tab);
-                      if (tab === 'leads') refreshEnquiries();
                     }}
                     className={`px-4 py-2 rounded font-mono text-xs uppercase tracking-wider font-bold transition cursor-pointer shrink-0 ${
                       isActive 
@@ -3066,142 +3064,6 @@ export default function App() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                {adminTab === 'leads' && (
-                  <motion.div
-                    key="leads"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-6"
-                  >
-                    <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded border border-zinc-805">
-                      <div>
-                        <h4 className="font-serif text-base font-bold text-zinc-100">Admin Lead Dashboard (Leads & Reservation Database)</h4>
-                        <p className="text-[11px] text-zinc-400 font-mono">Consolidated logs of submissions made via the suite checkout wizard and contact forms.</p>
-                      </div>
-                      <button
-                        onClick={clearAllLeads}
-                        className="px-3.5 py-1.5 bg-red-950/40 hover:bg-red-900/50 text-red-200 border border-red-900/50 hover:text-white rounded text-xs font-mono uppercase tracking-widest cursor-pointer font-bold"
-                      >
-                        Clear All Logs
-                      </button>
-                    </div>
-
-                    <div className="max-w-3xl mx-auto space-y-8">
-                      {/* Room Reservations */}
-                      <div className="space-y-3">
-                        <div className="bg-zinc-900 px-4 py-2 border border-zinc-800 rounded flex justify-between items-center">
-                          <span className="font-serif text-sm font-bold text-brass flex items-center gap-1.5">
-                            🏨 Room Reservations & Bookings ({activeBookings.length})
-                          </span>
-                        </div>
-
-                        {activeBookings.length === 0 ? (
-                          <div className="bg-zinc-900/20 text-center py-8 rounded border border-zinc-950">
-                            <p className="font-mono text-xs text-zinc-500">No room bookings submitted yet.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {activeBookings.map((b) => (
-                              <div key={b.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded text-xs leading-relaxed space-y-2 relative group">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h5 className="font-bold text-zinc-200 text-sm flex items-center gap-2">
-                                      <span>{b.guestName}</span>
-                                      <span className="text-[10px] font-mono font-normal bg-teal-950 text-teal-400 border border-teal-900/60 px-1.5 py-0.2 rounded uppercase">
-                                        {b.status}
-                                      </span>
-                                    </h5>
-                                    <p className="text-[11px] text-zinc-400 mt-0.5">
-                                      Contact: <span className="text-zinc-200 font-medium">{b.contactValue}</span> | ID: <span className="font-mono text-brass font-bold">{b.id}</span>
-                                    </p>
-                                  </div>
-                                  <span className="text-xs font-mono font-bold text-brass">
-                                    Rs {b.pricingNpr?.toLocaleString('en-NP') || '0'}
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-zinc-950/50 p-2 rounded border border-zinc-900 text-[11px] font-mono text-zinc-400">
-                                  <div>
-                                    <span className="block text-[9px] text-zinc-500 uppercase">Suite Selected</span>
-                                    <strong className="text-zinc-200 font-serif">{b.roomName}</strong>
-                                  </div>
-                                  <div>
-                                    <span className="block text-[9px] text-zinc-500 uppercase">Arrival Date</span>
-                                    <strong className="text-zinc-200">{b.checkIn}</strong>
-                                  </div>
-                                  <div>
-                                    <span className="block text-[9px] text-zinc-500 uppercase">Departure Date</span>
-                                    <strong className="text-zinc-200">{b.checkOut}</strong>
-                                  </div>
-                                  <div>
-                                    <span className="block text-[9px] text-zinc-500 uppercase">Guests Count</span>
-                                    <strong className="text-zinc-200">{b.guestsCount} Guest{b.guestsCount > 1 ? 's' : ''}</strong>
-                                  </div>
-                                </div>
-
-                                {b.message && (
-                                  <div className="bg-zinc-950 p-2.5 rounded border border-zinc-850/60 text-zinc-300">
-                                    <span className="block text-[9px] font-mono text-zinc-500 uppercase mb-0.5">Guest Thoughts / Message:</span>
-                                    <p className="italic">"{b.message}"</p>
-                                  </div>
-                                )}
-
-                                <div className="flex justify-end pt-1">
-                                  <button
-                                    onClick={() => deleteBooking(b.id)}
-                                    className="text-[10px] text-red-400 hover:text-red-300 hover:underline"
-                                  >
-                                    Delete Booking
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Contact Enquiries */}
-                      <div className="space-y-3">
-                        <div className="bg-zinc-900 px-4 py-2 border border-zinc-800 rounded flex justify-between items-center">
-                          <span className="font-serif text-sm font-bold text-brass flex items-center gap-1.5">
-                            🗳️ Contact Form Enquiries ({enquiries.length})
-                          </span>
-                        </div>
-
-                        {enquiries.length === 0 ? (
-                          <div className="bg-zinc-900/20 text-center py-8 rounded border border-zinc-950">
-                            <p className="font-mono text-xs text-zinc-500">No contact enquiries submitted yet.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {enquiries.map((enq) => (
-                              <div key={enq.id} className="bg-zinc-900/60 p-4 border border-zinc-805 rounded text-xs leading-relaxed space-y-2 relative group">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h5 className="font-bold text-zinc-200">{enq.name}</h5>
-                                    <a href={`mailto:${enq.email}`} className="text-[11px] text-brass font-mono hover:underline">{enq.email}</a>
-                                  </div>
-                                  <span className="text-[9px] font-mono text-zinc-500 truncate">{new Date(enq.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <p className="text-zinc-300 bg-zinc-950 p-2.5 rounded border border-zinc-850 whitespace-pre-wrap">{enq.message}</p>
-                                <div className="flex justify-end pt-1">
-                                  <button
-                                    onClick={() => deleteEnquiry(enq.id)}
-                                    className="text-[10px] text-red-400 hover:text-red-300 hover:underline"
-                                  >
-                                    Delete Lead
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </motion.div>
                 )}
