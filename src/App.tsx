@@ -952,28 +952,10 @@ export default function App() {
       {/* HEADER & NAVIGATION */}
       <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-warm-white/95 backdrop-blur-md border-b border-teal-dark/10 shadow-md' : 'bg-transparent border-transparent'}`}>
         {activeBookings.length > 0 && (
-          <div className="bg-gradient-to-r from-teal-dark to-teal-mid border-b border-white/10 text-warm-white py-2 px-4 shadow-inner pr-12 md:pr-4">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-teal-300 rounded-full animate-pulse shrink-0" />
-                <p className="text-xs font-mono">
-                  <strong className="text-white">Active Selection:</strong> You have {activeBookings.length} room reservation{activeBookings.length > 1 ? 's' : ''} saved on this device.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-0.5 sm:pb-0">
-                {activeBookings.map((b) => (
-                  <div key={b.id} className="bg-teal-dark/60 text-[10px] px-2.5 py-1 rounded border border-white/20 flex items-center gap-1 whitespace-nowrap">
-                    <span>{b.roomName}: <strong className="text-white font-mono">{b.id}</strong></span>
-                    <button 
-                      onClick={() => deleteBooking(b.id)} 
-                      className="text-red-400 hover:text-red-300 font-bold ml-1 transition-colors hover:scale-110" 
-                      title="Cancel Booking"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
+          <div className="bg-emerald-950 border-b border-emerald-800/50 text-emerald-100 py-2 px-4 shadow-sm">
+            <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-xs font-mono text-center">
+              <span className="text-emerald-400 font-bold text-sm">✓</span>
+              <span><strong>Booking Confirmed!</strong> Your reservation request has been successfully recorded.</span>
             </div>
           </div>
         )}
