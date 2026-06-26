@@ -302,6 +302,7 @@ export default function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedRoomForBooking, setSelectedRoomForBooking] = useState<Room | null>(null);
   const [activeBookings, setActiveBookings] = useState<BookingSubmission[]>([]);
+  const [showBookingSuccess, setShowBookingSuccess] = useState(false);
 
   // Scroll & Mobile Menu toggles
   const [isScrolled, setIsScrolled] = useState(false);
@@ -850,6 +851,10 @@ export default function App() {
 
   const handleBookingSuccess = (newBooking: BookingSubmission) => {
     setActiveBookings((prev) => [newBooking, ...prev]);
+    setShowBookingSuccess(true);
+    setTimeout(() => {
+      setShowBookingSuccess(false);
+    }, 1000);
   };
 
   const handleOpenBooking = (room: Room | null) => {
@@ -951,8 +956,8 @@ export default function App() {
       
       {/* HEADER & NAVIGATION */}
       <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-warm-white/95 backdrop-blur-md border-b border-teal-dark/10 shadow-md' : 'bg-transparent border-transparent'}`}>
-        {activeBookings.length > 0 && (
-          <div className="bg-emerald-950 border-b border-emerald-800/50 text-emerald-100 py-2 px-4 shadow-sm">
+        {showBookingSuccess && (
+          <div className="bg-emerald-950 border-b border-emerald-800/50 text-emerald-100 py-2 px-4 shadow-sm animate-fade-in">
             <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-xs font-mono text-center">
               <span className="text-emerald-400 font-bold text-sm">✓</span>
               <span><strong>Booking Confirmed!</strong> Your reservation request has been successfully recorded.</span>
