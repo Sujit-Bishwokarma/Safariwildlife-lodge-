@@ -6,12 +6,12 @@
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Custom palette matching user's requested style */
-  --color-teal-dark: #004d4d;      /* Deep Teal Primary brand */
-  --color-teal-mid: #0b5959;       /* Highly Polished warm deep teal */
-  --color-teal-light: #126666;     /* Interactive highlights */
-  --color-warm-white: #ffffff;     /* Crisp brilliant white background for maximum contrast */
-  --color-warm-cream: #f9f8f6;     /* Light premium linen cream background */
+  /* Custom palette: Premium Icy Gray & Luxury Dark Green with Brass Gold */
+  --color-teal-dark: #0b3b24;      /* Premium Deep Heritage Dark Green */
+  --color-teal-mid: #0f482d;       /* Polished Mid Dark Green hover state */
+  --color-teal-light: #155c3a;     /* Subtle Dark Green highlight */
+  --color-warm-white: #ecf1f4;     /* Premium Icy Gray primary surface */
+  --color-warm-cream: #e2e8ed;     /* Frosted Slate Icy Gray secondary surface */
   --color-brass: #d4af37;          /* Rich Metallic Pure Gold Accent */
   --color-brass-dark: #b8860b;     /* Polished Dark Gold hover value */
   --color-brass-light: #f3e5ab;    /* Radiant glowing Gold highlight */

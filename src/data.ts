@@ -42,12 +42,44 @@ export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFA
 
 export const ROOMS: Room[] = [
   {
-    id: 'luxury-suite',
-    name: 'Deluxe Room',
-    description: 'A beautifully designed, spacious room featuring warm timber accents, cozy bedding, and large windows that fill the space with clear natural light.',
-    size: '55 m²',
-    bedType: '1 Extra-Large King Bed',
+    id: 'double-room',
+    name: 'Double Room',
+    description: 'Suitable for 2 people. A cozy, peaceful, and comfortable room ideal for couples or solo travelers.',
+    size: '35 m²',
+    bedType: '1 Double Bed',
     capacity: 2,
+    view: 'Lodge Gardens & Forest View',
+    priceNpr: 12500,
+    imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+    amenities: [
+      'Air Conditioning',
+      'Comfort'
+    ],
+    highlight: 'Suitable for 2 people'
+  },
+  {
+    id: 'triple-room',
+    name: 'Triple Room',
+    description: 'Suitable for 3 people. A spacious and comfortable room designed for small groups or friends traveling together.',
+    size: '45 m²',
+    bedType: '1 Double Bed & 1 Single Bed',
+    capacity: 3,
+    view: 'Resort Courtyard & Garden View',
+    priceNpr: 15500,
+    imageUrl: SAFARI_HERO_LODGE_ALT,
+    amenities: [
+      'Air Conditioning',
+      'Comfort'
+    ],
+    highlight: 'Suitable for 3 people'
+  },
+  {
+    id: 'family-room',
+    name: 'Family Room',
+    description: 'Suitable for 4–5 people. A generously sized and comfortable room thoughtfully arranged for families.',
+    size: '55 m²',
+    bedType: '2 Double Beds',
+    capacity: 5,
     view: 'Lodge Gardens & Forest View',
     priceNpr: 18500,
     imageUrl: SAFARI_SUITE_ROOM,
@@ -55,23 +87,7 @@ export const ROOMS: Room[] = [
       'Air Conditioning',
       'Comfort'
     ],
-    highlight: 'Private balcony overlooking nature'
-  },
-  {
-    id: 'deluxe-cottage',
-    name: 'Deluxe Cottage',
-    description: 'A cozy and charming standalone cottage that borders our tranquil gardens. This space offers supreme comfort in a highly restful jungle-adjacent atmosphere.',
-    size: '45 m²',
-    bedType: '1 King Bed or 2 Twin Beds',
-    capacity: 2,
-    view: 'Resort Courtyard & Garden View',
-    priceNpr: 12500,
-    imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
-    amenities: [
-      'Air Conditioning',
-      'Comfort'
-    ],
-    highlight: 'Outdoor garden seating area'
+    highlight: 'Suitable for 4–5 people'
   }
 ];
 

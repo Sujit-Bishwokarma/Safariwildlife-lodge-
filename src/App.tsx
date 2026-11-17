@@ -24,7 +24,6 @@ import {
   Instagram,
   Facebook,
   Grid,
-  MessageCircle,
   Menu,
   X,
   Trash2,
@@ -36,10 +35,11 @@ import {
   Settings,
   Database,
   RefreshCw,
-  History
+  History,
+  Eye
 } from 'lucide-react';
 
-import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_LODGE_LOGO } from './data';
+import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_DINING, SAFARI_LODGE_LOGO } from './data';
 import { Room, BookingSubmission, GalleryItem, Testimonial, Amenity } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -78,12 +78,40 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
+  const buildThreeRooms = (sourceRooms?: Room[]): Room[] => {
+    const backupRooms: Room[] = Array.isArray((backupData as any)?.rooms) ? (backupData as any).rooms : [];
+    const pickValidImage = (idx: number, fallbackUrl: string) => {
+      const candidate = sourceRooms?.[idx]?.imageUrl || backupRooms?.[idx]?.imageUrl;
+      if (
+        candidate &&
+        !candidate.includes('localhost:') &&
+        !candidate.includes('127.0.0.1:') &&
+        !candidate.includes('0.0.0.0:') &&
+        !candidate.includes('/src/assets/images/') &&
+        candidate !== '[object Object]'
+      ) {
+        return candidate;
+      }
+      return fallbackUrl;
+    };
+
+    return [
+      { ...ROOMS[0], imageUrl: pickValidImage(0, ROOMS[0].imageUrl) },
+      { ...ROOMS[1], imageUrl: pickValidImage(1, ROOMS[1].imageUrl) },
+      { ...ROOMS[2], imageUrl: pickValidImage(2, ROOMS[2].imageUrl) }
+    ];
+  };
+
   // Dynamic state loaded on mount, using local storage or fallback to static data
   const [rooms, setRooms] = useState<Room[]>(() => {
     const saved = localStorage.getItem('safari_dynamic_rooms');
+    const migrated3Boxes = localStorage.getItem('safari_rooms_3boxes_v1');
     if (saved) {
       try {
         const parsed: Room[] = JSON.parse(saved);
+        if (!migrated3Boxes) {
+          return buildThreeRooms(parsed);
+        }
         // Auto-repair stale paths stored in user's browser localStorage cache
         return parsed.map(room => {
           const fallback = ROOMS.find(r => r.id === room.id);
@@ -104,7 +132,7 @@ export default function App() {
         console.error(e);
       }
     }
-    return ROOMS;
+    return buildThreeRooms();
   });
 
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
@@ -199,11 +227,24 @@ export default function App() {
     return SAFARI_LODGE_LOGO;
   });
 
+  const DEFAULT_OWNER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80';
+
+  const [ownerPhotoImage, setOwnerPhotoImage] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_owner_photo');
+    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && saved !== '[object Object]') {
+      return saved;
+    }
+    return DEFAULT_OWNER_PHOTO;
+  });
+
   const [instagramUrl, setInstagramUrl] = useState<string>(() => {
     return localStorage.getItem('safari_social_instagram') || 'https://instagram.com';
   });
   const [facebookUrl, setFacebookUrl] = useState<string>(() => {
     return localStorage.getItem('safari_social_facebook') || 'https://facebook.com';
+  });
+  const [tiktokUrl, setTiktokUrl] = useState<string>(() => {
+    return localStorage.getItem('safari_social_tiktok') || 'https://tiktok.com';
   });
   const [whatsappPhone, setWhatsappPhone] = useState<string>(() => {
     return localStorage.getItem('safari_social_whatsapp') || '9779700863273';
@@ -213,17 +254,12 @@ export default function App() {
     return localStorage.getItem('safari_enquiry_gmail') || 'safarilodgechitwan@gmail.com';
   });
 
-  // Auto-apply the uploaded backup JSON file if first time loading
+  // Auto-apply the uploaded backup JSON file if first time loading (excluding rooms, handled by 3-room migration)
   useEffect(() => {
     const backupApplied = localStorage.getItem('safari_applied_backup_2026-06-16');
     if (!backupApplied && backupData && typeof backupData === 'object') {
       try {
         let applied = false;
-        if (Array.isArray((backupData as any).rooms)) {
-          setRooms((backupData as any).rooms);
-          localStorage.setItem('safari_dynamic_rooms', JSON.stringify((backupData as any).rooms));
-          applied = true;
-        }
         if (Array.isArray((backupData as any).galleryItems)) {
           setGalleryItems((backupData as any).galleryItems);
           localStorage.setItem('safari_dynamic_gallery', JSON.stringify((backupData as any).galleryItems));
@@ -262,11 +298,25 @@ export default function App() {
         }
         if (applied) {
           localStorage.setItem('safari_applied_backup_2026-06-16', 'true');
-          console.log('⚡ Applied safari_lodge_database_backup_2026-06-10.json configuration successfully with updated prices');
         }
       } catch (err) {
         console.error('Failed to auto-apply database backup', err);
       }
+    }
+
+    const migrated3Boxes = localStorage.getItem('safari_rooms_3boxes_v1');
+    if (!migrated3Boxes) {
+      let existingRooms: Room[] | undefined;
+      try {
+        const saved = localStorage.getItem('safari_dynamic_rooms');
+        if (saved) existingRooms = JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+      const nextRooms = buildThreeRooms(existingRooms);
+      setRooms(nextRooms);
+      localStorage.setItem('safari_dynamic_rooms', JSON.stringify(nextRooms));
+      localStorage.setItem('safari_rooms_3boxes_v1', 'true');
     }
   }, []);
 
@@ -307,6 +357,18 @@ export default function App() {
   // Scroll & Mobile Menu toggles
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [zoomedPhoto, setZoomedPhoto] = useState<{ src: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!zoomedPhoto) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomedPhoto(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [zoomedPhoto]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -954,21 +1016,29 @@ export default function App() {
   return (
     <div className="min-h-screen bg-warm-white text-teal-dark font-sans selection:bg-brass selection:text-teal-dark antialiased w-full overflow-x-hidden">
       
+      {/* FLOATING BOOKING SUCCESS TOAST */}
+      <AnimatePresence>
+        {showBookingSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="fixed top-6 left-1/2 z-50 bg-emerald-950 border border-emerald-800/80 text-emerald-100 py-3 px-6 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-mono whitespace-nowrap font-medium"
+          >
+            <span className="text-emerald-400 font-extrabold text-sm">✓</span>
+            <span><strong>Booking Confirmed!</strong> Your reservation has been successfully recorded.</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* HEADER & NAVIGATION */}
       <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-warm-white/95 backdrop-blur-md border-b border-teal-dark/10 shadow-md' : 'bg-transparent border-transparent'}`}>
-        {showBookingSuccess && (
-          <div className="bg-emerald-950 border-b border-emerald-800/50 text-emerald-100 py-2 px-4 shadow-sm animate-fade-in">
-            <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-xs font-mono text-center">
-              <span className="text-emerald-400 font-bold text-sm">✓</span>
-              <span><strong>Booking Confirmed!</strong> Your reservation request has been successfully recorded.</span>
-            </div>
-          </div>
-        )}
-        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-3' : 'py-5'}`}>
+        <div className={`max-w-7xl mx-auto px-2.5 sm:px-5 lg:px-8 flex items-center justify-between flex-nowrap gap-2 transition-all duration-300 ${isScrolled ? 'py-3' : 'py-5'}`}>
           
           {/* Brand Logo & Name */}
-          <a href="#home" className="flex items-center gap-3 group focus:outline-none focus:ring-1 focus:ring-brass p-1 rounded-md">
-            <div className={`w-11 h-11 md:w-14 md:h-14 rounded-full overflow-hidden border transition-all duration-300 bg-white flex-shrink-0 flex items-center justify-center p-0.5 shadow-sm group-hover:border-brass ${isScrolled ? 'border-teal-dark/25' : 'border-brass/35'}`}>
+          <a href="#home" className="flex items-center gap-2 sm:gap-3 lg:gap-4 group focus:outline-none focus:ring-1 focus:ring-brass p-1 rounded-md min-w-0 shrink-0">
+            <div className={`w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border transition-all duration-300 bg-white flex-shrink-0 flex items-center justify-center p-0.5 shadow-sm group-hover:border-brass ${isScrolled ? 'border-teal-dark/25' : 'border-brass/35'}`}>
               <img 
                 src={brandLogoImage} 
                 className="w-full h-full object-contain rounded-full" 
@@ -976,46 +1046,49 @@ export default function App() {
                 referrerPolicy="no-referrer"
               />
             </div>
-            <div className="flex flex-col">
-              <h1 className={`font-serif font-bold text-base md:text-lg leading-tight tracking-wider uppercase transition-colors duration-300 ${isScrolled ? 'text-teal-dark' : 'text-warm-white'}`}>
+            <div className="flex flex-col min-w-0">
+              <h1 className={`font-serif font-bold text-[20px] sm:text-3xl md:text-[28px] lg:text-4xl leading-tight tracking-wide sm:tracking-wider uppercase whitespace-nowrap transition-colors duration-300 ${isScrolled ? 'text-teal-dark' : 'text-warm-white'}`}>
                 Safari Wildlife
               </h1>
-              <p className="text-[9px] md:text-[10px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-1">
+              <p className="text-[9px] sm:text-[10px] md:text-xs text-brass uppercase font-bold font-mono tracking-widest leading-none mt-1 whitespace-nowrap">
                 Lodge & Camp • Chitwan
               </p>
             </div>
           </a>
 
           {/* Nav Links */}
-          <nav className={`hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-widest font-bold transition-all duration-300 ${isScrolled ? 'text-teal-dark/95' : 'text-warm-white'}`}>
+          <nav className={`hidden md:flex items-center md:gap-3 lg:gap-5 xl:gap-7 font-mono md:text-[10px] lg:text-xs uppercase md:tracking-wider lg:tracking-widest font-bold whitespace-nowrap transition-all duration-300 ${isScrolled ? 'text-teal-dark/95' : 'text-warm-white'}`}>
             <a href="#home" className="hover:text-brass transition-colors py-1">Home</a>
             <a href="#suites" className="hover:text-brass transition-colors py-1">Suites</a>
+            <a href="#dining" className="hover:text-brass transition-colors py-1">Dining</a>
             <a href="#amenities" className="hover:text-brass transition-colors py-1">Amenities</a>
             <a href="#gallery" className="hover:text-brass transition-colors py-1">Gallery</a>
             <a href="#contact" className="hover:text-brass transition-colors py-1">Contact</a>
           </nav>
 
-          {/* Quick Booking Call to Action */}
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="hidden lg:block text-right">
+          {/* Call Button Beside Menu */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 flex-nowrap">
+            <div className="hidden xl:block text-right mr-1">
               <span className={`block text-[10px] uppercase font-mono tracking-widest transition-colors duration-300 ${isScrolled ? 'text-teal-dark/50' : 'text-warm-white/65'}`}>Direct Booking Support</span>
-              <a href="tel:+9779700863273" className="text-xs font-mono font-bold text-brass hover:text-brass-dark transition-colors">
-                📞 +977 970-0863273
-              </a>
+              <span className="text-xs font-mono font-bold text-brass">
+                +977 970-0863273
+              </span>
             </div>
-            
-            <button
-              onClick={() => handleOpenBooking(null)}
-              className="px-4 py-1.5 bg-teal-dark hover:bg-teal-mid text-brass border border-brass/35 font-serif text-xs uppercase tracking-widest font-semibold transition-all rounded shadow-sm hover:shadow cursor-pointer"
-              id="header-nav-book-btn"
+
+            <a
+              href="tel:+9779700863273"
+              id="header-call-btn"
+              aria-label="Call Safari Wildlife Lodge"
+              className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-brass hover:bg-brass-dark text-teal-dark font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-md shadow-sm transition-all cursor-pointer shrink-0 whitespace-nowrap"
             >
-              Book Now
-            </button>
+              <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+              <span>Call</span>
+            </a>
 
             {/* Hamburger 3-Line Menu Bar */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`p-1.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-brass ${isScrolled ? 'text-teal-dark hover:bg-teal-dark/5' : 'text-warm-white hover:bg-white/10'}`}
+              className={`md:hidden p-1 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-brass ${isScrolled ? 'text-teal-dark hover:bg-teal-dark/5' : 'text-warm-white hover:bg-white/10'}`}
               id="mobile-menu-toggle"
               aria-label="Toggle Navigation Drawer"
             >
@@ -1026,7 +1099,7 @@ export default function App() {
       </header>
 
       {/* HERO SECTION */}
-      <section id="home" className="relative min-h-screen pt-32 pb-24 md:pb-36 flex items-center justify-center overflow-hidden bg-teal-dark group">
+      <section id="home" className="relative min-h-screen pt-36 md:pt-40 pb-24 md:pb-36 flex items-center justify-center overflow-hidden bg-teal-dark group">
         
         {/* Parallax Background Imagery */}
         <div className="absolute inset-0">
@@ -1083,18 +1156,18 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.9 }}
-              className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto"
+              className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto w-full"
             >
               <button
                 onClick={() => handleOpenBooking(null)}
-                className="w-full sm:w-auto px-8 py-4 bg-brass hover:bg-brass-dark text-teal-dark font-serif font-bold text-sm uppercase tracking-widest rounded-lg shadow-lg hover:shadow-brass/20 transition-all btn-glow cursor-pointer"
+                className="w-full sm:flex-1 px-8 py-4 sm:py-5 bg-brass hover:bg-brass-dark text-teal-dark font-serif font-bold text-lg sm:text-xl uppercase tracking-widest rounded-lg shadow-lg hover:shadow-brass/20 transition-all btn-glow cursor-pointer"
                 id="hero-book-cta"
               >
                 Book Your Stay
               </button>
               <a
                 href="#suites"
-                className="w-full sm:w-auto px-8 py-4 bg-warm-white/10 hover:bg-warm-white text-warm-white hover:text-teal-dark border border-warm-white/30 font-serif font-semibold text-sm uppercase tracking-widest rounded-lg transition-all"
+                className="w-full sm:flex-1 px-8 py-4 sm:py-5 bg-warm-white/10 hover:bg-warm-white text-warm-white hover:text-teal-dark border border-warm-white/30 font-serif font-bold text-lg sm:text-xl uppercase tracking-widest rounded-lg transition-all"
               >
                 View Our Rooms
               </a>
@@ -1109,7 +1182,7 @@ export default function App() {
             className="flex items-center justify-center gap-4 sm:gap-8 pt-10 max-w-4xl mx-auto flex-nowrap overflow-x-auto scrollbar-none px-6"
           >
             {/* Bubble 1: Wifi */}
-            <div className="bg-[#031c1c]/45 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-sm group shrink-0">
+            <div className="bg-[#09321f]/65 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-sm group shrink-0">
               <Wifi className="w-4 h-4 text-brass group-hover:scale-110 transition-transform duration-300" />
               <span className="text-warm-white text-[10px] sm:text-xs font-semibold tracking-widest uppercase font-mono">
                 Wifi
@@ -1117,7 +1190,7 @@ export default function App() {
             </div>
 
             {/* Bubble 2: Free Parking */}
-            <div className="bg-[#031c1c]/45 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-1.5 rounded-xl flex items-center gap-2.5 transition-all duration-300 shadow-sm group shrink-0">
+            <div className="bg-[#09321f]/65 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-1.5 rounded-xl flex items-center gap-2.5 transition-all duration-300 shadow-sm group shrink-0">
               <Car className="w-4 h-4 text-brass group-hover:scale-110 transition-transform duration-300" />
               <span className="text-warm-white text-[10px] sm:text-xs font-semibold tracking-widest uppercase font-mono text-left leading-tight">
                 Free<br />Parking
@@ -1125,7 +1198,7 @@ export default function App() {
             </div>
 
             {/* Bubble 3: Breakfast */}
-            <div className="bg-[#031c1c]/45 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-sm group shrink-0">
+            <div className="bg-[#09321f]/65 backdrop-blur-md border border-brass/45 hover:border-brass px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-sm group shrink-0">
               <Utensils className="w-4 h-4 text-brass group-hover:scale-110 transition-transform duration-300" />
               <span className="text-warm-white text-[10px] sm:text-xs font-semibold tracking-widest uppercase font-mono">
                 Breakfast
@@ -1175,7 +1248,7 @@ export default function App() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
               whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-b from-white/95 to-warm-white/60 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-white transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(139,115,85,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(139,115,85,0.18)] relative group overflow-hidden"
+              className="bg-gradient-to-b from-[#f4f7f9]/95 to-warm-white/80 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-[#f4f7f9] transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(11,59,36,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(11,59,36,0.16)] relative group overflow-hidden"
             >
               <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">01</span>
               
@@ -1196,7 +1269,7 @@ export default function App() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
               whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-b from-white/95 to-warm-white/60 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-white transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(139,115,85,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(139,115,85,0.18)] relative group overflow-hidden"
+              className="bg-gradient-to-b from-[#f4f7f9]/95 to-warm-white/80 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-[#f4f7f9] transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(11,59,36,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(11,59,36,0.16)] relative group overflow-hidden"
             >
               <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">02</span>
               
@@ -1233,8 +1306,8 @@ export default function App() {
             </p>
           </div>
 
-          {/* Rooms Grid Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
+          {/* Rooms Grid Cards (Double, Triple & Family) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full">
             {rooms.map((room, idx) => (
               <motion.div 
                 key={room.id}
@@ -1242,16 +1315,25 @@ export default function App() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="bg-white rounded-lg border border-brass/25 hover:border-brass/50 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative group"
+                className="bg-[#f4f7f9] rounded-lg border border-brass/25 hover:border-brass/50 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative group"
               >
                 {/* Clean Image Banner */}
-                <div className="relative h-72 sm:h-96 overflow-hidden bg-teal-dark/5">
+                <div className="relative h-64 sm:h-72 overflow-hidden bg-teal-dark/5">
                   <img
                     src={room.imageUrl}
                     alt={room.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                     referrerPolicy="no-referrer"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setZoomedPhoto({ src: room.imageUrl, alt: room.name })}
+                    aria-label={`View full photo of ${room.name}`}
+                    title="View full photo"
+                    className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {/* Simplified Info Box */}
@@ -1265,7 +1347,7 @@ export default function App() {
                         {room.size}
                       </span>
                     </div>
-                    <p className="text-xs text-teal-dark/75 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-teal-dark/80 leading-relaxed font-medium">
                       {room.description}
                     </p>
                   </div>
@@ -1309,6 +1391,127 @@ export default function App() {
         </div>
       </section>
 
+      {/* DINING SECTION */}
+      <section id="dining" className="scroll-mt-24 py-24 bg-warm-cream relative overflow-hidden border-y border-brass/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* Standalone Section Title */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-2xl mx-auto mb-14 space-y-3"
+          >
+            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Culinary Experience</span>
+            <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
+              Safari Dining Area
+            </h2>
+            <p className="text-sm text-teal-dark/70 leading-relaxed">
+              Freshly prepared Nepali, Tharu, and homestyle meals served daily in our peaceful safari dining area.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+
+            {/* Left Column - Dining Imagery */}
+            <motion.div
+              initial={{ opacity: 0, x: -25 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-6"
+            >
+              <div className="relative h-80 sm:h-[420px] rounded-2xl overflow-hidden border border-brass/30 shadow-md group bg-teal-dark/10">
+                <img
+                  src={SAFARI_DINING}
+                  alt="Safari Dining Area at Safari Wildlife Lodge"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/70 via-transparent to-transparent" />
+                <button
+                  type="button"
+                  onClick={() => setZoomedPhoto({ src: SAFARI_DINING, alt: 'Safari Dining Area' })}
+                  aria-label="View full photo of Safari Dining Area"
+                  title="View full photo"
+                  className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between text-warm-white">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brass font-bold block">Fresh Kitchen</span>
+                    <span className="font-serif text-lg sm:text-xl font-bold">Garden & Campfire Dining</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-brass/20 backdrop-blur-sm border border-brass/40 flex items-center justify-center text-brass">
+                    <Utensils className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Dining Details */}
+            <motion.div
+              initial={{ opacity: 0, x: 25 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-6 space-y-6"
+            >
+              <div className="space-y-2">
+                <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Local & Fresh Cuisine</span>
+                <h3 className="font-serif text-2xl sm:text-3xl text-teal-dark tracking-tight font-bold">
+                  Homestyle Lodge Dining
+                </h3>
+                <p className="text-sm text-teal-dark/75 leading-relaxed">
+                  Enjoy freshly prepared meals made with local Chitwan ingredients, from warm morning breakfasts before your jungle safari to relaxing evening dinners.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#f4f7f9]/90 border border-brass/20 shadow-sm">
+                  <div className="w-10 h-10 rounded-lg bg-teal-dark/5 flex items-center justify-center text-brass shrink-0">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-teal-dark">Fresh Morning Breakfast</h4>
+                    <p className="text-xs text-teal-dark/70 leading-relaxed mt-0.5">
+                      Start your day with organic tea, coffee, fresh seasonal fruits, eggs, and warm homemade dishes.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#f4f7f9]/90 border border-brass/20 shadow-sm">
+                  <div className="w-10 h-10 rounded-lg bg-teal-dark/5 flex items-center justify-center text-brass shrink-0">
+                    <Utensils className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-teal-dark">Nepali, Tharu & Continental Meals</h4>
+                    <p className="text-xs text-teal-dark/70 leading-relaxed mt-0.5">
+                      Savor authentic Nepali Dal Bhat, local Tharu specialties, vegetarian curries, and familiar continental favorites cooked to order.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#f4f7f9]/90 border border-brass/20 shadow-sm">
+                  <div className="w-10 h-10 rounded-lg bg-teal-dark/5 flex items-center justify-center text-brass shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-teal-dark">Outdoor Garden & Campfire Evenings</h4>
+                    <p className="text-xs text-teal-dark/70 leading-relaxed mt-0.5">
+                      Dine comfortably indoors or unwind in our tranquil garden courtyard with evening tea and snacks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
       {/* AMENITIES SECTION (FREE & COMPREHENSIVE) */}
       <section id="amenities" className="scroll-mt-24 py-24 bg-teal-dark text-warm-white border-y border-brass/20 relative overflow-hidden">
         
@@ -1334,8 +1537,8 @@ export default function App() {
             </p>
           </motion.div>
 
-          {/* Minimal Catalog-Style Amenities Presentation */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 max-w-4xl mx-auto mt-6">
+          {/* Long-Width Amenities Boxes */}
+          <div className="flex flex-col gap-4 max-w-5xl mx-auto w-full mt-6">
             {amenities.map((amen, idx) => (
               <motion.div 
                 key={amen.id}
@@ -1343,30 +1546,31 @@ export default function App() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.05 }}
-                className="flex items-start gap-4 pb-4 border-b border-brass/10 hover:border-brass/35 transition-all duration-300 group"
+                className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-brass/25 hover:border-brass/60 shadow-sm transition-all duration-300 group"
               >
-                {/* Compact Circular Icon */}
-                <div className="w-9 h-9 rounded-full bg-brass/10 flex items-center justify-center text-brass shrink-0 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 border border-brass/15">
-                  {renderAmenityIcon(amen.iconName)}
-                </div>
+                <div className="flex items-start sm:items-center gap-4 sm:gap-5 flex-1">
+                  {/* Icon Box */}
+                  <div className="w-12 h-12 rounded-xl bg-brass/15 flex items-center justify-center text-brass shrink-0 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 border border-brass/25">
+                    {renderAmenityIcon(amen.iconName)}
+                  </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-serif text-base font-bold text-warm-white group-hover:text-brass transition-colors">
+                  <div className="space-y-1 flex-1">
+                    <h4 className="font-serif text-lg sm:text-xl font-bold text-warm-white group-hover:text-brass transition-colors">
                       {amen.name}
                     </h4>
-                    <span className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.2 rounded shrink-0 border ${
-                      amen.category === 'Free' 
-                        ? 'border-emerald-700/40 text-emerald-400 bg-emerald-950/40' 
-                        : 'border-amber-700/40 text-amber-400 bg-amber-950/40'
-                    }`}>
-                      {amen.category}
-                    </span>
+                    <p className="text-xs sm:text-sm text-warm-white/75 leading-relaxed">
+                      {amen.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-warm-white/70 leading-relaxed max-w-md">
-                    {amen.description}
-                  </p>
                 </div>
+
+                <span className={`text-[10px] sm:text-xs font-mono uppercase tracking-wider px-3 py-1 rounded-md shrink-0 self-start sm:self-center border font-bold ${
+                  amen.category === 'Free' 
+                    ? 'border-emerald-700/50 text-emerald-300 bg-emerald-950/50' 
+                    : 'border-amber-700/50 text-amber-300 bg-amber-950/50'
+                }`}>
+                  {amen.category}
+                </span>
               </motion.div>
             ))}
           </div>
@@ -1400,7 +1604,23 @@ export default function App() {
           <div className="relative max-w-7xl mx-auto px-4 md:px-12 mb-10 group">
             
             {/* Main Interactive Stage */}
-            <div className="relative h-[400px] sm:h-[550px] md:h-[650px] lg:h-[750px] w-full bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-200 shadow-md">
+            <div className="relative h-[400px] sm:h-[550px] md:h-[650px] lg:h-[750px] w-full bg-warm-cream rounded-2xl overflow-hidden border border-brass/25 shadow-md">
+              {filteredGallery.length > 0 && filteredGallery[galleryIndex] && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setZoomedPhoto({
+                      src: filteredGallery[galleryIndex].imageUrl,
+                      alt: filteredGallery[galleryIndex].title || 'Safari Wildlife Lodge Gallery'
+                    })
+                  }
+                  aria-label="View full gallery photo"
+                  title="View full photo"
+                  className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              )}
               {filteredGallery.length > 0 ? (
                 <AnimatePresence initial={false} custom={slideDirection} mode="wait">
                   <motion.div
@@ -1610,8 +1830,77 @@ export default function App() {
         </motion.div>
       </section>
 
+      {/* OWNER SECTION */}
+      <section id="owner" className="scroll-mt-24 py-20 bg-warm-white border-t border-brass/15 relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
+            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Leadership & Hospitality</span>
+            <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
+              Meet Our Owner & Host
+            </h2>
+            <p className="text-sm text-teal-dark/70 leading-relaxed">
+              Dedicated to genuine local hospitality and personalized care throughout your stay in Chitwan.
+            </p>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.7 }}
+            className="bg-warm-cream/40 rounded-2xl border border-brass/25 p-8 sm:p-10 md:p-12 shadow-sm"
+          >
+            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-10">
+              {/* Full Owner Photo Box */}
+              <div className="w-full md:w-72 lg:w-80 shrink-0">
+                <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden border-2 border-brass/40 bg-teal-dark/10 shadow-md group">
+                  <img
+                    src={ownerPhotoImage}
+                    alt="Safari Wildlife Lodge Owner & Host"
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_OWNER_PHOTO;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/80 via-transparent to-transparent" />
+                  <button
+                    type="button"
+                    onClick={() => setZoomedPhoto({ src: ownerPhotoImage, alt: 'Owner & Host — Safari Wildlife Lodge' })}
+                    aria-label="View full photo of Owner & Host"
+                    title="View full photo"
+                    className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <div className="absolute bottom-4 left-4 right-4 text-warm-white">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brass font-bold block">Owner & Host</span>
+                    <h3 className="font-serif text-lg font-bold">Safari Wildlife Lodge</h3>
+                    <span className="text-xs text-warm-white/75 font-mono">Ratnanagar, Chitwan</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Owner Message */}
+              <div className="space-y-4 text-center md:text-left">
+                <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold block">Founder's Note</span>
+                <h3 className="font-serif text-3xl sm:text-4xl text-teal-dark font-bold leading-tight">
+                  A Personal Welcome From Our Host
+                </h3>
+                <p className="font-serif italic text-base sm:text-lg text-teal-dark/90 leading-relaxed">
+                  "When you stay at Safari Wildlife Lodge & Camp, you are welcomed like family. Our goal is simple: clean, comfortable rooms, fresh home-cooked food, and warm local care so you can enjoy the beauty of Chitwan in peace."
+                </p>
+                <p className="text-xs sm:text-sm text-teal-dark/75 leading-relaxed">
+                  Whether you are visiting for a relaxing weekend, a family holiday, or a wildlife adventure in Chitwan National Park, I am personally here with our team to assist you from arrival to departure.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CONTACT & EMBEDDED MAP SECTION */}
-      <section id="contact" className="scroll-mt-24 py-24 bg-warm-white relative overflow-hidden">
+      <section id="contact" className="scroll-mt-24 py-24 bg-warm-white border-t border-brass/10 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -1710,7 +1999,7 @@ export default function App() {
                           placeholder="Abhishek Shrestha"
                           value={contactName}
                           onChange={(e) => setContactName(e.target.value)}
-                          className="w-full bg-white border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass"
+                          className="w-full bg-[#f4f7f9] border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass"
                         />
                       </div>
                       <div className="space-y-1">
@@ -1721,7 +2010,7 @@ export default function App() {
                           placeholder="recipient@domain.com"
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
-                          className="w-full bg-white border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass"
+                          className="w-full bg-[#f4f7f9] border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass"
                         />
                       </div>
                     </div>
@@ -1734,7 +2023,7 @@ export default function App() {
                         placeholder="Detail your requested arrival dates, wildlife packages, airport pickup, or custom family suites requirements..."
                         value={contactMessage}
                         onChange={(e) => setContactMessage(e.target.value)}
-                        className="w-full bg-white border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
+                        className="w-full bg-[#f4f7f9] border border-brass/30 px-3 py-1.5 text-sm rounded text-teal-dark focus:outline-none focus:ring-1 focus:ring-brass placeholder:text-teal-dark/40"
                       />
                     </div>
 
@@ -1752,17 +2041,74 @@ export default function App() {
                 )}
               </div>
 
+              {/* Social Media Logos Just Above Map Box */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-warm-cream/30 border border-brass/20 rounded-xl px-5 py-4">
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-brass font-bold block">Connect With Us</span>
+                  <span className="font-serif text-base font-bold text-teal-dark">Follow Us On Social Media</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Instagram"
+                    title="Instagram"
+                    className="w-10 h-10 rounded-full bg-teal-dark hover:bg-brass text-warm-white hover:text-teal-dark flex items-center justify-center border border-brass/30 transition-all shadow-sm"
+                  >
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Facebook"
+                    title="Facebook"
+                    className="w-10 h-10 rounded-full bg-teal-dark hover:bg-brass text-warm-white hover:text-teal-dark flex items-center justify-center border border-brass/30 transition-all shadow-sm"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                  <a
+                    href={tiktokUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="TikTok"
+                    title="TikTok"
+                    className="w-10 h-10 rounded-full bg-teal-dark hover:bg-brass text-warm-white hover:text-teal-dark flex items-center justify-center border border-brass/30 transition-all shadow-sm"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.87a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.3Z" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+
               {/* EMBEDDED GOOGLE MAPS LINKED DIRECTLY */}
-              <div className="rounded-xl overflow-hidden shadow-md border border-brass/25 h-72 relative">
-                {/* Embedded standard Google Map centered precisely on the user-specified exact location */}
-                <iframe
-                  title="Safari Wildlife Lodge Location Map"
-                  src="https://maps.google.com/maps?q=Safariwildlife%20lodge%20and%20camp%2C%20Museum%2C%20bacheuli%20road%2C%20Ratnanagar%2000977&t=&z=16&ie=UTF8&iwloc=&output=embed"
-                  className="w-full h-full border-0"
-                  allowFullScreen={false}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+              <div className="rounded-xl overflow-hidden shadow-md border border-brass/25 bg-warm-cream/20">
+                <div className="h-80 sm:h-96 relative w-full">
+                  <iframe
+                    title="Safariwildlife lodge and camp Location Map"
+                    src="https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sSafariwildlife+lodge+and+camp,+Ratnanagar!6i17"
+                    className="w-full h-full border-0"
+                    allowFullScreen={true}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+                <div className="px-4 py-3 bg-[#f4f7f9] border-t border-brass/15 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <span className="text-teal-dark/80 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-brass shrink-0" />
+                    <span>Safariwildlife lodge and camp, Museum, bacheuli road, Ratnanagar 00977</span>
+                  </span>
+                  <a
+                    href="https://www.google.com/maps/place/Safariwildlife+lodge+and+camp/@27.5744678,84.4992284,17z/data=!4m6!3m5!1s0x3994ef03707a2cd3:0x89f764f394f149c2!8m2!3d27.5744678!4d84.4992284!16s%2Fg%2F11c5sjm13f"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brass hover:text-brass-dark font-bold underline"
+                  >
+                    Open in Google Maps
+                  </a>
+                </div>
               </div>
 
             </motion.div>
@@ -1773,77 +2119,77 @@ export default function App() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#041515] text-warm-white border-t border-brass/35 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-brass/10">
+      <footer className="bg-[#082d1b] text-warm-white border-t border-brass/35 pt-14 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 border-b border-brass/10">
           
-          {/* Col 1 - Brand Info */}
-          <div className="space-y-4">
-            <h3 className="font-serif font-bold text-xl tracking-widest uppercase text-warm-white flex items-center gap-1.5">
-              <span>Safari Wildlife</span>
+          {/* Brand Info */}
+          <div className="max-w-xl mx-auto text-center space-y-3">
+            <h3 className="font-serif font-bold text-2xl tracking-widest uppercase text-warm-white">
+              Safari Wildlife
             </h3>
-            <p className="text-xs text-warm-white/70 italic font-serif">
+            <p className="text-xs text-brass italic font-serif">
               "Stay Close to Nature, Closer to Adventure"
             </p>
-            <p className="text-xs text-warm-white/60 leading-relaxed">
+            <p className="text-xs text-warm-white/65 leading-relaxed">
               Experience comfortable accommodations, warm hospitality, and close encounters with nature in Chitwan National Park's pristine wilderness boundaries.
             </p>
           </div>
 
-          {/* Col 2 - Quick Links */}
-          <div className="space-y-4">
-            <h5 className="text-xs uppercase font-mono tracking-widest text-brass font-bold">Lodge Navigation</h5>
-            <ul className="space-y-2 text-xs text-warm-white/70 font-mono">
-              <li><a href="#home" className="hover:text-brass transition-colors">Hero Home</a></li>
-              <li><a href="#suites" className="hover:text-brass transition-colors">Our Rooms</a></li>
-              <li><a href="#amenities" className="hover:text-brass transition-colors">Amenities Included</a></li>
-              <li><a href="#gallery" className="hover:text-brass transition-colors">Lodge Gallery</a></li>
-              <li><a href="#contact" className="hover:text-brass transition-colors">Contact Support</a></li>
-            </ul>
-          </div>
-
-          {/* Col 3 - Legal & Security */}
-          <div className="space-y-4">
-            <h5 className="text-xs uppercase font-mono tracking-widest text-brass font-bold">Trust & Safety</h5>
-            <div className="space-y-2 text-[11px] text-warm-white/60 leading-relaxed">
-              <p>📍 Museum, bacheuli road, Ratnanagar 00977, Chitwan, Nepal</p>
-              <p>📞 Phone desk: +977 970-0863273</p>
-              <p>🛡️ Secure physical deadlocked suites & climate cooling standards guaranteed.</p>
-            </div>
-          </div>
-
-          {/* Col 4 - Social coordinates / Newsletter */}
-          <div className="space-y-4">
-            <h5 className="text-xs uppercase font-mono tracking-widest text-brass font-bold">Nature Updates</h5>
-            <p className="text-xs text-warm-white/65">
-              Follow our wildlife sightings and conservation logs via digital streams.
-            </p>
-            <div className="flex gap-4 text-warm-white/75">
-              <a href={instagramUrl} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Instagram">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href={facebookUrl} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="Facebook">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href={`https://api.whatsapp.com/send?phone=${whatsappPhone}`} target="_blank" rel="noreferrer" className="hover:text-brass transition-colors" title="WhatsApp Chat">
-                <MessageCircle className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-
         </div>
 
-        {/* Outer credit lines */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-mono text-warm-white/40">
+        {/* Outer credit line */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 text-center text-[10px] font-mono text-warm-white/45 space-y-1.5">
           <p>© 2026 Safari Wildlife Lodge & Camp. Ratnanagar, Chitwan. All Rights Reserved.</p>
-          <div className="flex gap-4">
-            <span>Security Certified</span>
-            <span>|</span>
-            <span>Local Community Protected</span>
-            <span>|</span>
-            <span>Eco-Friendly Wilderness Lodge</span>
-          </div>
+          <p className="text-[11px] text-warm-white/60 tracking-wide">
+            Made by Crafora Labs, Chitwan
+          </p>
+          <p className="text-[9px] text-warm-white/25 text-center tracking-widest pt-0.5">
+            9802971617
+          </p>
         </div>
       </footer>
+
+      {/* PHOTO FULL-VIEW LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {zoomedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setZoomedPhoto(null)}
+            className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-5xl w-full flex flex-col items-center justify-center"
+            >
+              <button
+                type="button"
+                onClick={() => setZoomedPhoto(null)}
+                aria-label="Close full photo view"
+                className="absolute -top-2 right-0 sm:top-2 sm:right-2 z-20 w-10 h-10 rounded-full bg-teal-dark/90 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 flex items-center justify-center shadow-lg transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <img
+                src={zoomedPhoto.src}
+                alt={zoomedPhoto.alt}
+                className="max-w-full max-h-[82vh] w-auto h-auto object-contain rounded-xl shadow-2xl border border-brass/30 bg-black/40"
+                referrerPolicy="no-referrer"
+              />
+              {zoomedPhoto.alt && (
+                <p className="mt-3 text-xs sm:text-sm font-serif text-warm-white/85 text-center tracking-wide">
+                  {zoomedPhoto.alt}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* RENDER DYNAMIC COMPONENTS */}
       <BookingModal
@@ -1880,8 +2226,8 @@ export default function App() {
               <div className="space-y-8">
                 {/* Header inside drawer */}
                 <div className="flex items-center justify-between border-b border-brass/10 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-brass/35 bg-white p-0.5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border border-brass/35 bg-white p-0.5 shadow-sm flex-shrink-0">
                       <img 
                         src={brandLogoImage} 
                         className="w-full h-full object-contain rounded-full" 
@@ -1890,8 +2236,8 @@ export default function App() {
                       />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-serif font-bold text-base text-teal-dark uppercase tracking-wider">Safari Wildlife</span>
-                      <span className="text-[9px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-0.5">Lodge & Camp</span>
+                      <span className="font-serif font-bold text-lg text-teal-dark uppercase tracking-wider leading-tight">Safari Wildlife</span>
+                      <span className="text-[10px] text-brass uppercase font-bold font-mono tracking-widest leading-none mt-0.5">Lodge & Camp</span>
                     </div>
                   </div>
                   <button 
@@ -1918,6 +2264,14 @@ export default function App() {
                     className="hover:text-brass transition-colors py-2 flex items-center justify-between border-b border-teal-dark/5"
                   >
                     <span>Suites</span>
+                    <ChevronRight className="w-4 h-4 text-brass" />
+                  </a>
+                  <a 
+                    href="#dining" 
+                    onClick={() => setIsMobileMenuOpen(false)} 
+                    className="hover:text-brass transition-colors py-2 flex items-center justify-between border-b border-teal-dark/5"
+                  >
+                    <span>Dining</span>
                     <ChevronRight className="w-4 h-4 text-brass" />
                   </a>
                   <a 
@@ -2694,6 +3048,65 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Owner Photo Section */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Owner Portrait Photo</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Upload or update the full owner photo displayed in the Owner section.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
+                        <div className="space-y-3">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Owner Photo</span>
+                          <div className="flex items-center justify-center bg-zinc-950 rounded-lg border border-zinc-850 h-[145px] overflow-hidden">
+                            <img
+                              src={ownerPhotoImage}
+                              alt="Active Owner Photo"
+                              className="w-full h-full object-cover object-top"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              setOwnerPhotoImage(DEFAULT_OWNER_PHOTO);
+                              localStorage.removeItem('safari_dynamic_owner_photo');
+                              triggerAdminStatus('🔄 Owner photo restored to default!');
+                            }}
+                            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                          >
+                            Reset to Default
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Upload Owner Photo</span>
+                          <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-5 text-center group transition cursor-pointer relative min-h-[145px] bg-zinc-950/50">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  processAndSetImage(file, (base64) => {
+                                    setOwnerPhotoImage(base64);
+                                    localStorage.setItem('safari_dynamic_owner_photo', base64);
+                                    triggerAdminStatus('🎉 Owner photo updated!');
+                                  });
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="owner-photo-upload-input"
+                            />
+                            <Upload className={`w-8 h-8 mb-2.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                            <span className="text-[11.5px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                              {compressingImage ? 'COMPRESSING...' : 'UPLOAD OWNER PHOTO'}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-mono mt-1.5">Supports JPG, PNG, or WebP portraits</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Gmail Target Coordinates */}
                     <div className="space-y-4">
                       <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
@@ -2869,8 +3282,22 @@ export default function App() {
                             />
                           </div>
 
-                          <div className="md:col-span-2">
-                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">WhatsApp Number (For Direct Chats & Widget)</label>
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">TikTok URL</label>
+                            <input
+                              type="text"
+                              value={tiktokUrl}
+                              onChange={(e) => {
+                                setTiktokUrl(e.target.value);
+                                localStorage.setItem('safari_social_tiktok', e.target.value);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                              placeholder="e.g. https://tiktok.com/@yourlodgename"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">WhatsApp Number (Floating Chat Widget)</label>
                             <input
                               type="text"
                               value={whatsappPhone}
@@ -2881,7 +3308,7 @@ export default function App() {
                               className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
                               placeholder="e.g. 9779700863273"
                             />
-                            <span className="text-[10px] text-zinc-500 font-mono block mt-1">Please include country code without space or '+' symbol (e.g. 977XXXXXXXXXX for Nepal). This powers the floating WhatsApp button!</span>
+                            <span className="text-[10px] text-zinc-500 font-mono block mt-1">Include country code without '+' (e.g. 977XXXXXXXXXX).</span>
                           </div>
                         </div>
 
@@ -2890,9 +3317,11 @@ export default function App() {
                             onClick={() => {
                               setInstagramUrl('https://instagram.com');
                               setFacebookUrl('https://facebook.com');
+                              setTiktokUrl('https://tiktok.com');
                               setWhatsappPhone('9779700863273');
                               localStorage.removeItem('safari_social_instagram');
                               localStorage.removeItem('safari_social_facebook');
+                              localStorage.removeItem('safari_social_tiktok');
                               localStorage.removeItem('safari_social_whatsapp');
                               triggerAdminStatus('🔄 Social coordinates reset to defaults!');
                             }}
