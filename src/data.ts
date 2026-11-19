@@ -38,7 +38,7 @@ const SAFARI_JUNGLE_PATH = 'https://images.unsplash.com/photo-1534447677768-be43
 const SAFARI_CROCODILE = 'https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1200&q=80';
 const SAFARI_CAMP_BONFIRE = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80';
 
-export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_LODGE_LOGO };
+export { SAFARI_HERO_LODGE, SAFARI_SUITE_ROOM, SAFARI_DINING, SAFARI_RHINO, SAFARI_LODGE_LOGO, SAFARI_RESORT_COURTYARD, SAFARI_CULINARY_DINING, SAFARI_CAMP_BONFIRE };
 
 export const ROOMS: Room[] = [
   {
@@ -51,6 +51,7 @@ export const ROOMS: Room[] = [
     view: 'Lodge Gardens & Forest View',
     priceNpr: 12500,
     imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+    secondaryImageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -67,6 +68,7 @@ export const ROOMS: Room[] = [
     view: 'Resort Courtyard & Garden View',
     priceNpr: 15500,
     imageUrl: SAFARI_HERO_LODGE_ALT,
+    secondaryImageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -83,6 +85,7 @@ export const ROOMS: Room[] = [
     view: 'Lodge Gardens & Forest View',
     priceNpr: 18500,
     imageUrl: SAFARI_SUITE_ROOM,
+    secondaryImageUrl: SAFARI_RESORT_COURTYARD,
     amenities: [
       'Air Conditioning',
       'Comfort'
@@ -92,6 +95,13 @@ export const ROOMS: Room[] = [
 ];
 
 export const AMENITIES: Amenity[] = [
+  {
+    id: 'air-conditioning',
+    name: 'Air Conditioning',
+    category: 'Free',
+    description: 'Quiet, climate-controlled cooling in all guest rooms for restful comfort in every season.',
+    iconName: 'Custom'
+  },
   {
     id: 'wifi',
     name: 'Complimentary Wi-Fi',

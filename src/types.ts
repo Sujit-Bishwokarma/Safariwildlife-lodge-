@@ -8,6 +8,7 @@ export interface Room {
   view: string;
   priceNpr: number;
   imageUrl: string;
+  secondaryImageUrl?: string;
   amenities: string[]; // comfort and security only as per user request to limit key amenities
   highlight: string;
 }
@@ -18,6 +19,7 @@ export interface Amenity {
   category: 'Free' | 'Paid';
   description: string;
   iconName: string; // matches lucide icon names
+  logoUrl?: string;
 }
 
 export interface GalleryItem {

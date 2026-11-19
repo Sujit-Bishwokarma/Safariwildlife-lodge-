@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Wifi,
-  Plane,
   Utensils,
   Car,
-  Compass,
   Phone,
   Mail,
   MapPin,
@@ -36,10 +34,11 @@ import {
   Database,
   RefreshCw,
   History,
-  Eye
+  Eye,
+  Video
 } from 'lucide-react';
 
-import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_DINING, SAFARI_LODGE_LOGO } from './data';
+import { ROOMS, AMENITIES, GALLERY_ITEMS, TESTIMONIALS, SAFARI_HERO_LODGE, SAFARI_DINING, SAFARI_RHINO, SAFARI_LODGE_LOGO, SAFARI_CULINARY_DINING, SAFARI_CAMP_BONFIRE } from './data';
 import { Room, BookingSubmission, GalleryItem, Testimonial, Amenity } from './types';
 import BookingModal from './components/BookingModal';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -73,6 +72,72 @@ const slideVariants = {
   })
 };
 
+const HERO_VIDEO_DB_NAME = 'safari_lodge_media_db';
+const HERO_VIDEO_STORE = 'hero_media';
+const HERO_VIDEO_KEY = 'hero_bg_video';
+
+const openMediaDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(HERO_VIDEO_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(HERO_VIDEO_STORE)) {
+        db.createObjectStore(HERO_VIDEO_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveHeroVideoToIDB = async (blob: Blob): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).put(blob, HERO_VIDEO_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
+const loadHeroVideoFromIDB = async (): Promise<Blob | null> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readonly');
+    const req = tx.objectStore(HERO_VIDEO_STORE).get(HERO_VIDEO_KEY);
+    req.onsuccess = () => {
+      db.close();
+      resolve(req.result instanceof Blob ? req.result : null);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+};
+
+const clearHeroVideoFromIDB = async (): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).delete(HERO_VIDEO_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
 export default function App() {
   // Admin Token & Control Panel state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -96,9 +161,9 @@ export default function App() {
     };
 
     return [
-      { ...ROOMS[0], imageUrl: pickValidImage(0, ROOMS[0].imageUrl) },
-      { ...ROOMS[1], imageUrl: pickValidImage(1, ROOMS[1].imageUrl) },
-      { ...ROOMS[2], imageUrl: pickValidImage(2, ROOMS[2].imageUrl) }
+      { ...ROOMS[0], imageUrl: pickValidImage(0, ROOMS[0].imageUrl), secondaryImageUrl: sourceRooms?.[0]?.secondaryImageUrl || ROOMS[0].secondaryImageUrl },
+      { ...ROOMS[1], imageUrl: pickValidImage(1, ROOMS[1].imageUrl), secondaryImageUrl: sourceRooms?.[1]?.secondaryImageUrl || ROOMS[1].secondaryImageUrl },
+      { ...ROOMS[2], imageUrl: pickValidImage(2, ROOMS[2].imageUrl), secondaryImageUrl: sourceRooms?.[2]?.secondaryImageUrl || ROOMS[2].secondaryImageUrl }
     ];
   };
 
@@ -112,9 +177,9 @@ export default function App() {
         if (!migrated3Boxes) {
           return buildThreeRooms(parsed);
         }
-        // Auto-repair stale paths stored in user's browser localStorage cache
-        return parsed.map(room => {
-          const fallback = ROOMS.find(r => r.id === room.id);
+        // Auto-repair stale paths stored in user's browser localStorage cache and ensure secondaryImageUrl exists
+        return parsed.map((room, idx) => {
+          const fallback = ROOMS.find(r => r.id === room.id) || ROOMS[idx];
           if (fallback) {
             const isStale = !room.imageUrl || 
                             room.imageUrl.includes('localhost:') || 
@@ -122,9 +187,19 @@ export default function App() {
                             room.imageUrl.includes('0.0.0.0:') ||
                             room.imageUrl.includes('/src/assets/images/') ||
                             room.imageUrl === '[object Object]';
-            if (isStale) {
-              return { ...room, imageUrl: fallback.imageUrl };
-            }
+            const hasValidSecond = Boolean(
+              room.secondaryImageUrl &&
+              !room.secondaryImageUrl.includes('localhost:') &&
+              !room.secondaryImageUrl.includes('127.0.0.1:') &&
+              !room.secondaryImageUrl.includes('0.0.0.0:') &&
+              !room.secondaryImageUrl.includes('/src/assets/images/') &&
+              room.secondaryImageUrl !== '[object Object]'
+            );
+            return {
+              ...room,
+              imageUrl: isStale ? fallback.imageUrl : room.imageUrl,
+              secondaryImageUrl: hasValidSecond ? room.secondaryImageUrl : fallback.secondaryImageUrl
+            };
           }
           return room;
         });
@@ -134,6 +209,8 @@ export default function App() {
     }
     return buildThreeRooms();
   });
+
+  const [roomPhotoIndices, setRoomPhotoIndices] = useState<Record<string, number>>({});
 
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
     const saved = localStorage.getItem('safari_dynamic_gallery');
@@ -163,11 +240,20 @@ export default function App() {
     return GALLERY_ITEMS;
   });
 
+  const ensureAirConditioningAmenity = (list: Amenity[]): Amenity[] => {
+    const hasAc = list.some(
+      a => a.id === 'air-conditioning' || a.name.toLowerCase().includes('air conditioning')
+    );
+    if (hasAc) return list;
+    const acDefault = AMENITIES.find(a => a.id === 'air-conditioning');
+    return acDefault ? [acDefault, ...list] : list;
+  };
+
   const [amenities, setAmenities] = useState<Amenity[]>(() => {
     const saved = localStorage.getItem('safari_dynamic_amenities');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return ensureAirConditioningAmenity(JSON.parse(saved));
       } catch (e) {
         console.error(e);
       }
@@ -213,6 +299,98 @@ export default function App() {
     return SAFARI_HERO_LODGE || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80';
   });
 
+  const [heroBgVideo, setHeroBgVideo] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_hero_video');
+    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && !saved.startsWith('blob:')) {
+      return saved.trim();
+    }
+    return '';
+  });
+  const [uploadingHeroVideo, setUploadingHeroVideo] = useState(false);
+  const heroVideoBlobUrlRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const savedUrl = localStorage.getItem('safari_dynamic_hero_video');
+    const mode = localStorage.getItem('safari_dynamic_hero_video_mode');
+    if ((mode === 'upload' || !savedUrl) && typeof window !== 'undefined' && 'indexedDB' in window) {
+      loadHeroVideoFromIDB()
+        .then((blob) => {
+          if (!active || !blob) return;
+          if (heroVideoBlobUrlRef.current) {
+            URL.revokeObjectURL(heroVideoBlobUrlRef.current);
+          }
+          const objectUrl = URL.createObjectURL(blob);
+          heroVideoBlobUrlRef.current = objectUrl;
+          setHeroBgVideo(objectUrl);
+        })
+        .catch((err) => console.error('Failed to load hero video from IndexedDB', err));
+    }
+    return () => {
+      active = false;
+      if (heroVideoBlobUrlRef.current) {
+        URL.revokeObjectURL(heroVideoBlobUrlRef.current);
+        heroVideoBlobUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleHeroVideoUpload = async (file: File) => {
+    const isVideoMime = file.type.startsWith('video/');
+    const isVideoExt = /\.(mp4|webm|mov|m4v|ogg)$/i.test(file.name);
+    if (!isVideoMime && !isVideoExt) {
+      triggerAdminStatus('⚠️ Please select a valid video file (MP4, WebM, MOV).');
+      return;
+    }
+    setUploadingHeroVideo(true);
+    try {
+      await saveHeroVideoToIDB(file);
+      if (heroVideoBlobUrlRef.current) {
+        URL.revokeObjectURL(heroVideoBlobUrlRef.current);
+      }
+      const objectUrl = URL.createObjectURL(file);
+      heroVideoBlobUrlRef.current = objectUrl;
+      setHeroBgVideo(objectUrl);
+      localStorage.removeItem('safari_dynamic_hero_video');
+      localStorage.setItem('safari_dynamic_hero_video_mode', 'upload');
+      triggerAdminStatus('🎬 Hero background video uploaded & active!');
+    } catch (err) {
+      console.error('Failed to save hero video', err);
+      triggerAdminStatus('⚠️ Failed to store video in browser storage.');
+    } finally {
+      setUploadingHeroVideo(false);
+    }
+  };
+
+  const handleClearHeroVideo = async () => {
+    try {
+      await clearHeroVideoFromIDB();
+    } catch (err) {
+      console.error('Failed to clear hero video from IndexedDB', err);
+    }
+    if (heroVideoBlobUrlRef.current) {
+      URL.revokeObjectURL(heroVideoBlobUrlRef.current);
+      heroVideoBlobUrlRef.current = null;
+    }
+    setHeroBgVideo('');
+    localStorage.removeItem('safari_dynamic_hero_video');
+    localStorage.removeItem('safari_dynamic_hero_video_mode');
+    triggerAdminStatus('🔄 Hero background switched back to image!');
+  };
+
+  const resolveHeroVideoMedia = (rawUrl: string): { isYoutube: boolean; src: string } => {
+    const trimmed = rawUrl.trim();
+    const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      const id = ytMatch[1];
+      return {
+        isYoutube: true,
+        src: `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&rel=0&playsinline=1&modestbranding=1`
+      };
+    }
+    return { isYoutube: false, src: trimmed };
+  };
+
   const [brandLogoImage, setBrandLogoImage] = useState<string>(() => {
     const saved = localStorage.getItem('safari_dynamic_logo');
     if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && saved !== '[object Object]') {
@@ -236,6 +414,59 @@ export default function App() {
     }
     return DEFAULT_OWNER_PHOTO;
   });
+
+  const DEFAULT_OWNER_NAME = 'Hotel Owner';
+
+  const [ownerName, setOwnerName] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_owner_name');
+    if (saved && saved.trim() !== '') {
+      return saved;
+    }
+    return DEFAULT_OWNER_NAME;
+  });
+
+  const DEFAULT_DINING_PHOTOS = [SAFARI_DINING, SAFARI_CULINARY_DINING, SAFARI_CAMP_BONFIRE];
+
+  const [diningPhotos, setDiningPhotos] = useState<string[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_dining_photos');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 3 && parsed.every((p: unknown) => typeof p === 'string' && p.trim() !== '')) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return DEFAULT_DINING_PHOTOS;
+  });
+  const [diningPhotoIndex, setDiningPhotoIndex] = useState(0);
+
+  const DEFAULT_SAURAHA_VIDEO = 'https://www.youtube.com/embed/-RxcEmC1DFQ';
+
+  const [saurahaVideoUrl, setSaurahaVideoUrl] = useState<string>(() => {
+    const saved = localStorage.getItem('safari_dynamic_sauraha_video');
+    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '') {
+      return saved.trim();
+    }
+    return DEFAULT_SAURAHA_VIDEO;
+  });
+
+  const resolveVideoSource = (rawUrl: string): { isIframe: boolean; src: string } => {
+    const url = (rawUrl || DEFAULT_SAURAHA_VIDEO).trim();
+    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return {
+        isIframe: true,
+        src: `https://www.youtube.com/embed/${ytMatch[1]}`
+      };
+    }
+    return {
+      isIframe: false,
+      src: url
+    };
+  };
 
   const [instagramUrl, setInstagramUrl] = useState<string>(() => {
     return localStorage.getItem('safari_social_instagram') || 'https://instagram.com';
@@ -282,8 +513,9 @@ export default function App() {
           applied = true;
         }
         if (Array.isArray((backupData as any).amenities)) {
-          setAmenities((backupData as any).amenities);
-          localStorage.setItem('safari_dynamic_amenities', JSON.stringify((backupData as any).amenities));
+          const nextAmenities = ensureAirConditioningAmenity((backupData as any).amenities);
+          setAmenities(nextAmenities);
+          localStorage.setItem('safari_dynamic_amenities', JSON.stringify(nextAmenities));
           applied = true;
         }
         if (Array.isArray((backupData as any).activeBookings)) {
@@ -317,6 +549,16 @@ export default function App() {
       setRooms(nextRooms);
       localStorage.setItem('safari_dynamic_rooms', JSON.stringify(nextRooms));
       localStorage.setItem('safari_rooms_3boxes_v1', 'true');
+    }
+
+    const migratedAcAmenity = localStorage.getItem('safari_amenities_ac_v1');
+    if (!migratedAcAmenity) {
+      setAmenities(prev => {
+        const nextAmenities = ensureAirConditioningAmenity(prev);
+        localStorage.setItem('safari_dynamic_amenities', JSON.stringify(nextAmenities));
+        return nextAmenities;
+      });
+      localStorage.setItem('safari_amenities_ac_v1', 'true');
     }
   }, []);
 
@@ -408,7 +650,8 @@ export default function App() {
     name: '',
     category: 'Free',
     description: '',
-    iconName: 'Compass'
+    iconName: 'Custom',
+    logoUrl: ''
   });
 
   // Room editing/adding form state
@@ -423,6 +666,7 @@ export default function App() {
     view: 'Jungle & River View',
     priceNpr: 15000,
     imageUrl: '',
+    secondaryImageUrl: '',
     amenities: [],
     highlight: ''
   });
@@ -558,6 +802,7 @@ export default function App() {
       view: 'Lodge Gardens & Forest View',
       priceNpr: 15000,
       imageUrl: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+      secondaryImageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
       amenities: ['Air Conditioning', 'Comfort'],
       highlight: 'Cozy garden retreat'
     });
@@ -579,6 +824,7 @@ export default function App() {
       view: roomForm.view || 'Jungle View',
       priceNpr: Number(roomForm.priceNpr) || 12000,
       imageUrl: roomForm.imageUrl || 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+      secondaryImageUrl: roomForm.secondaryImageUrl || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
       amenities: roomAmenityInput.split(',').map(s => s.trim()).filter(Boolean),
       highlight: roomForm.highlight || 'Comfort guaranteed'
     };
@@ -672,7 +918,8 @@ export default function App() {
       name: '',
       category: 'Free',
       description: '',
-      iconName: 'Compass'
+      iconName: 'Custom',
+      logoUrl: ''
     });
   };
 
@@ -686,7 +933,8 @@ export default function App() {
       name: amenityForm.name,
       category: amenityForm.category || 'Free',
       description: amenityForm.description,
-      iconName: amenityForm.iconName || 'Compass'
+      iconName: amenityForm.iconName || 'Custom',
+      logoUrl: amenityForm.logoUrl?.trim() || undefined
     };
 
     let updated: Amenity[];
@@ -998,21 +1246,6 @@ export default function App() {
     setReviewsIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
   };
 
-  // Helper mapping for icon rendering
-  const renderAmenityIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Wifi': return <Wifi className="w-5 h-5 text-brass" />;
-      case 'Utensils': return <Utensils className="w-5 h-5 text-brass" />;
-      case 'Car': return <Car className="w-5 h-5 text-brass" />;
-      case 'Plane': return <Plane className="w-5 h-5 text-brass" />;
-      case 'Sparkles': return <Sparkles className="w-5 h-5 text-brass" />;
-      case 'ShieldCheck': return <ShieldCheck className="w-5 h-5 text-brass" />;
-      case 'Award': return <Award className="w-5 h-5 text-brass" />;
-      case 'Clock': return <Clock className="w-5 h-5 text-brass" />;
-      default: return <Compass className="w-5 h-5 text-brass" />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-warm-white text-teal-dark font-sans selection:bg-brass selection:text-teal-dark antialiased w-full overflow-x-hidden">
       
@@ -1101,7 +1334,7 @@ export default function App() {
       {/* HERO SECTION */}
       <section id="home" className="relative min-h-screen pt-36 md:pt-40 pb-24 md:pb-36 flex items-center justify-center overflow-hidden bg-teal-dark group">
         
-        {/* Parallax Background Imagery */}
+        {/* Parallax Background Imagery / Video */}
         <div className="absolute inset-0">
           <img
             src={heroBgImage}
@@ -1113,6 +1346,33 @@ export default function App() {
               e.currentTarget.src = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80";
             }}
           />
+          {heroBgVideo && (() => {
+            const heroMedia = resolveHeroVideoMedia(heroBgVideo);
+            if (heroMedia.isYoutube) {
+              return (
+                <iframe
+                  key={heroMedia.src}
+                  src={heroMedia.src}
+                  title="Hero Background Video"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  className="absolute inset-0 w-full h-full pointer-events-none scale-[1.35] border-0"
+                />
+              );
+            }
+            return (
+              <video
+                key={heroMedia.src}
+                src={heroMedia.src}
+                poster={heroBgImage}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className="absolute inset-0 w-full h-full object-cover opacity-100"
+              />
+            );
+          })()}
           <div className="absolute inset-0 bg-gradient-to-t from-teal-dark via-teal-dark/15 to-transparent" />
           <div className="absolute inset-0 bg-black/20" />
         </div>
@@ -1218,72 +1478,99 @@ export default function App() {
         </div>
       </section>
 
-      {/* COMPACT HOTEL SECTION HIGHLIGHTS */}
+      {/* DISCOVER SAURAHA FULL-PAGE SECTION */}
       <section id="highlights" className="scroll-mt-24 py-20 bg-warm-cream relative overflow-hidden">
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8 }}
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12"
         >
-          
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Our Philosophy</span>
-            <h3 className="font-serif text-3xl md:text-5xl text-teal-dark tracking-tight leading-tight font-bold">
-              A Simple Nature Lodge Experience
-            </h3>
-            <p className="text-sm text-teal-dark/70 leading-relaxed">
-              Enjoy comfortable rustic rooms, gentle guided nature walks, and friendly hospitality right next to Chitwan National Park.
-            </p>
+          {/* Main Section Heading */}
+          <div className="space-y-4 text-center max-w-4xl mx-auto">
+            <span className="text-xs uppercase tracking-[0.25em] font-mono text-brass-dark font-bold block">
+              Sauraha • Chitwan Guide
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight text-teal-dark">
+              Discover Sauraha –{' '}
+              <span className="text-brass-dark">Experience Nature, Wildlife and Culture</span>
+            </h2>
+            <div className="w-24 h-0.5 bg-brass mx-auto rounded-full" />
           </div>
 
-          {/* Highlights 2-column Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            
-            {/* Highlight 1 */}
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-b from-[#f4f7f9]/95 to-warm-white/80 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-[#f4f7f9] transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(11,59,36,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(11,59,36,0.16)] relative group overflow-hidden"
-            >
-              <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">01</span>
-              
-              <div className="w-14 h-14 bg-teal-dark/5 rounded-xl flex items-center justify-center text-brass mb-6 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 shadow-sm">
-                <ShieldCheck className="w-7 h-7" />
-              </div>
-              
-              <h4 className="font-serif text-2xl font-bold text-teal-dark mb-3 group-hover:text-brass transition-colors">Cozy & Safe Retreat</h4>
-              <p className="text-xs text-teal-dark/75 leading-relaxed">
-                Relax in absolute peace and comfort. Our gated grounds are watched over by friendly local caretakers to keep your stay perfectly safe, quiet, and friendly.
+          {/* Full-Page Editorial Sections (No Boxes or Cards) */}
+          <div className="space-y-10 text-left">
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#0f5b39] tracking-tight">
+                <span className="text-brass-dark mr-1.5">~</span>
+                Chitwan National Park – Explore the Wild
+              </h3>
+              <p className="text-sm sm:text-base text-teal-dark/85 leading-relaxed sm:leading-loose">
+                Sauraha is one of the main gateways to Chitwan National Park, Nepal&apos;s first national park and a UNESCO World Heritage Site. The park is famous for its rich wildlife, green forests, open grasslands and beautiful wetlands. Visitors can explore the jungle through guided jeep safaris, nature walks and canoe rides. The park is home to the endangered one-horned rhinoceros, Royal Bengal tiger, deer, wild elephants, crocodiles and many other animals. Every jungle trip offers a different experience and a chance to discover wildlife in its natural habitat.
               </p>
-            </motion.div>
+            </div>
 
-            {/* Highlight 2 */}
-            <motion.div 
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-b from-[#f4f7f9]/95 to-warm-white/80 p-8 rounded-2xl border border-brass/15 hover:border-brass/50 hover:bg-[#f4f7f9] transition-all duration-300 shadow-[0_4px_20px_-4px_rgba(11,59,36,0.06)] hover:shadow-[0_15px_30px_-8px_rgba(11,59,36,0.16)] relative group overflow-hidden"
-            >
-              <span className="absolute top-4 right-6 text-6xl font-serif font-black text-brass/10 group-hover:text-brass/20 transition-all duration-300 pointer-events-none select-none font-mono">02</span>
-              
-              <div className="w-14 h-14 bg-teal-dark/5 rounded-xl flex items-center justify-center text-brass mb-6 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 shadow-sm">
-                <Award className="w-7 h-7" />
-              </div>
-              
-              <h4 className="font-serif text-2xl font-bold text-teal-dark mb-3 group-hover:text-brass transition-colors">Warm Nepali Hospitality</h4>
-              <p className="text-xs text-teal-dark/75 leading-relaxed">
-                Savor hand-prepared local tea, fresh farm-to-table meals cooked in our home kitchen, and gentle local wildlife walks guided by our knowledgeable naturalists.
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#0f5b39] tracking-tight">
+                <span className="text-brass-dark mr-1.5">~</span>
+                Wildlife and Natural Beauty – Enjoy Nature at Its Best
+              </h3>
+              <p className="text-sm sm:text-base text-teal-dark/85 leading-relaxed sm:leading-loose">
+                Beyond jungle safaris, Sauraha offers beautiful natural scenery and peaceful riverside experiences. The Rapti River is one of the area&apos;s main attractions, where visitors can enjoy canoe rides, watch crocodiles and spot different species of birds. Chitwan is also a wonderful destination for birdwatching, with hundreds of resident and migratory bird species. Early mornings bring fresh air and beautiful river views, while evenings offer stunning sunsets. Visitors can also explore nearby forests, wetlands and walking trails to enjoy the peaceful surroundings.
               </p>
-            </motion.div>
+            </div>
 
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#0f5b39] tracking-tight">
+                <span className="text-brass-dark mr-1.5">~</span>
+                Tharu Culture – Discover Local Traditions
+              </h3>
+              <p className="text-sm sm:text-base text-teal-dark/85 leading-relaxed sm:leading-loose">
+                Sauraha is also known for the rich culture and traditions of the Tharu community, one of the indigenous communities of Nepal&apos;s Terai region. Visitors can explore traditional Tharu villages, see local houses and learn about their lifestyle, food and customs. Traditional Tharu cuisine offers a chance to experience unique local flavours. In the evening, visitors can enjoy cultural programs featuring traditional music and dances, including the famous Tharu stick dance (Lathi Nach). These experiences offer a closer look at the local culture and heritage of Chitwan.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#0f5b39] tracking-tight">
+                <span className="text-brass-dark mr-1.5">~</span>
+                Adventure and Activities – Make Every Moment Special
+              </h3>
+              <p className="text-sm sm:text-base text-teal-dark/85 leading-relaxed sm:leading-loose">
+                Sauraha offers activities for visitors of all ages and interests. Guests can enjoy jeep safaris, canoe rides, guided jungle walks, birdwatching and wildlife photography. Families can explore nature together, while adventure lovers can discover the beauty of the jungle. Visitors can also learn about wildlife conservation at places such as the Gharial Breeding Centre. After a day of exploration, riverside restaurants, local cafés and peaceful surroundings offer the perfect place to relax. Whether you are travelling with family, friends or on your own, Sauraha offers a wonderful mix of adventure, culture and relaxation.
+              </p>
+            </div>
           </div>
+
+          {/* 1 Standard Simple Video Box */}
+          {(() => {
+            const videoSource = resolveVideoSource(saurahaVideoUrl);
+            return (
+              <div className="pt-2">
+                <div className="w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-brass/30 shadow-md bg-teal-dark aspect-video">
+                  {videoSource.isIframe ? (
+                    <iframe
+                      title="Discover Sauraha & Chitwan National Park Video"
+                      src={videoSource.src}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      controls
+                      playsInline
+                      preload="metadata"
+                      poster={SAFARI_RHINO}
+                      src={videoSource.src}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </motion.div>
       </section>
 
@@ -1291,24 +1578,26 @@ export default function App() {
       <section id="suites" className="scroll-mt-24 py-24 bg-warm-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
+          <div className="mb-16">
             <div className="space-y-2">
               <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Our Accommodations</span>
               <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
-                Simple & Comfortable Rooms
+                Cozy & Comfortable Rooms
               </h2>
               <p className="text-sm text-teal-dark/70 leading-relaxed">
                 Choose from our cozy, nature-friendly rooms designed for a peaceful stay.
               </p>
             </div>
-            <p className="text-xs text-teal-dark/65 max-w-sm font-mono tracking-wide leading-relaxed">
-              * Rates shown in Nepalese Rupees (NPR). Simple pricing for a budget-friendly and authentic stay.
-            </p>
           </div>
 
           {/* Rooms Grid Cards (Double, Triple & Family) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full">
-            {rooms.map((room, idx) => (
+            {rooms.map((room, idx) => {
+              const roomPhotos = [room.imageUrl, room.secondaryImageUrl].filter((u): u is string => Boolean(u && u.trim()));
+              const activePhotoIdx = roomPhotos.length > 0 ? (roomPhotoIndices[room.id] ?? 0) % roomPhotos.length : 0;
+              const activePhotoSrc = roomPhotos[activePhotoIdx] || room.imageUrl;
+
+              return (
               <motion.div 
                 key={room.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -1317,23 +1606,67 @@ export default function App() {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 className="bg-[#f4f7f9] rounded-lg border border-brass/25 hover:border-brass/50 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative group"
               >
-                {/* Clean Image Banner */}
-                <div className="relative h-64 sm:h-72 overflow-hidden bg-teal-dark/5">
+                {/* Clean Image Banner (2 Photos per Room) */}
+                <div className="relative h-64 sm:h-72 overflow-hidden bg-warm-cream">
                   <img
-                    src={room.imageUrl}
-                    alt={room.name}
+                    src={activePhotoSrc}
+                    alt={`${room.name} - Photo ${activePhotoIdx + 1}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
                     referrerPolicy="no-referrer"
                   />
                   <button
                     type="button"
-                    onClick={() => setZoomedPhoto({ src: room.imageUrl, alt: room.name })}
+                    onClick={() => setZoomedPhoto({ src: activePhotoSrc, alt: `${room.name} (Photo ${activePhotoIdx + 1}/${roomPhotos.length})` })}
                     aria-label={`View full photo of ${room.name}`}
                     title="View full photo"
                     className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
+
+                  {roomPhotos.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRoomPhotoIndices(prev => ({
+                            ...prev,
+                            [room.id]: (activePhotoIdx - 1 + roomPhotos.length) % roomPhotos.length
+                          }))
+                        }
+                        aria-label={`Previous photo of ${room.name}`}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/50 hover:bg-brass text-white hover:text-teal-dark flex items-center justify-center transition-all cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRoomPhotoIndices(prev => ({
+                            ...prev,
+                            [room.id]: (activePhotoIdx + 1) % roomPhotos.length
+                          }))
+                        }
+                        aria-label={`Next photo of ${room.name}`}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-black/50 hover:bg-brass text-white hover:text-teal-dark flex items-center justify-center transition-all cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+                        {roomPhotos.map((_, pIdx) => (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={() => setRoomPhotoIndices(prev => ({ ...prev, [room.id]: pIdx }))}
+                            aria-label={`Show photo ${pIdx + 1} of ${room.name}`}
+                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                              pIdx === activePhotoIdx ? 'w-4 bg-brass' : 'w-1.5 bg-white/60 hover:bg-white'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Simplified Info Box */}
@@ -1385,7 +1718,8 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
 
         </div>
@@ -1422,32 +1756,60 @@ export default function App() {
               transition={{ duration: 0.7 }}
               className="lg:col-span-6"
             >
-              <div className="relative h-80 sm:h-[420px] rounded-2xl overflow-hidden border border-brass/30 shadow-md group bg-teal-dark/10">
+              <div className="relative h-80 sm:h-[420px] rounded-2xl overflow-hidden border border-brass/30 shadow-md group bg-warm-cream">
                 <img
-                  src={SAFARI_DINING}
-                  alt="Safari Dining Area at Safari Wildlife Lodge"
+                  src={diningPhotos[diningPhotoIndex % diningPhotos.length]}
+                  alt={`Safari Dining Area - Photo ${(diningPhotoIndex % diningPhotos.length) + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/70 via-transparent to-transparent" />
                 <button
                   type="button"
-                  onClick={() => setZoomedPhoto({ src: SAFARI_DINING, alt: 'Safari Dining Area' })}
+                  onClick={() =>
+                    setZoomedPhoto({
+                      src: diningPhotos[diningPhotoIndex % diningPhotos.length],
+                      alt: `Safari Dining Area (Photo ${(diningPhotoIndex % diningPhotos.length) + 1}/${diningPhotos.length})`
+                    })
+                  }
                   aria-label="View full photo of Safari Dining Area"
                   title="View full photo"
                   className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
-                <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between text-warm-white">
-                  <div>
-                    <span className="text-[10px] uppercase font-mono tracking-widest text-brass font-bold block">Fresh Kitchen</span>
-                    <span className="font-serif text-lg sm:text-xl font-bold">Garden & Campfire Dining</span>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-brass/20 backdrop-blur-sm border border-brass/40 flex items-center justify-center text-brass">
-                    <Utensils className="w-5 h-5" />
-                  </div>
-                </div>
+                {diningPhotos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setDiningPhotoIndex(prev => (prev - 1 + diningPhotos.length) % diningPhotos.length)}
+                      aria-label="Previous Dining Area photo"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-brass text-white hover:text-teal-dark flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDiningPhotoIndex(prev => (prev + 1) % diningPhotos.length)}
+                      aria-label="Next Dining Area photo"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-brass text-white hover:text-teal-dark flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+                      {diningPhotos.map((_, dIdx) => (
+                        <button
+                          key={dIdx}
+                          type="button"
+                          onClick={() => setDiningPhotoIndex(dIdx)}
+                          aria-label={`Show dining photo ${dIdx + 1}`}
+                          className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                            dIdx === diningPhotoIndex % diningPhotos.length ? 'w-5 bg-brass' : 'w-1.5 bg-white/60 hover:bg-white'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
 
@@ -1549,9 +1911,16 @@ export default function App() {
                 className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-brass/25 hover:border-brass/60 shadow-sm transition-all duration-300 group"
               >
                 <div className="flex items-start sm:items-center gap-4 sm:gap-5 flex-1">
-                  {/* Icon Box */}
-                  <div className="w-12 h-12 rounded-xl bg-brass/15 flex items-center justify-center text-brass shrink-0 group-hover:bg-brass group-hover:text-teal-dark transition-all duration-300 border border-brass/25">
-                    {renderAmenityIcon(amen.iconName)}
+                  {/* Empty Logo Box (Directly upload logo from cPanel) */}
+                  <div className="w-12 h-12 rounded-xl bg-brass/10 flex items-center justify-center shrink-0 border border-brass/30 overflow-hidden">
+                    {amen.logoUrl ? (
+                      <img
+                        src={amen.logoUrl}
+                        alt={`${amen.name} logo`}
+                        className="w-full h-full object-contain p-1.5"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : null}
                   </div>
 
                   <div className="space-y-1 flex-1">
@@ -1578,6 +1947,64 @@ export default function App() {
 
 
         </div>
+      </section>
+
+      {/* YOUR STAY, OUR COMMITMENT WELCOME SECTION */}
+      <section id="commitment" className="scroll-mt-24 py-20 bg-warm-cream relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7 }}
+          className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10"
+        >
+          <div className="space-y-4 text-center max-w-4xl mx-auto">
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight text-teal-dark">
+              Your Stay, Our Commitment –{' '}
+              <span className="text-brass-dark">Welcome to Safari Wildlife Lodge &amp; Camp</span>
+            </h2>
+            <div className="w-24 h-0.5 bg-brass mx-auto rounded-full" />
+          </div>
+
+          <div className="space-y-5 text-sm sm:text-base text-teal-dark/85 leading-relaxed sm:leading-loose text-left">
+            <p>
+              At Safari Wildlife Lodge &amp; Camp, we believe a great journey begins with the right guidance and a comfortable place to stay. We help our guests plan their Sauraha experience by providing useful information, arranging jeep safaris and other local rides, and guiding them towards activities that match their interests and schedules.
+            </p>
+            <p>
+              With over 8 years of experience in hospitality, we have continuously worked to improve our services and understand the expectations of our guests. We value every visitor&apos;s comfort, satisfaction and feedback, and always strive to make their stay more enjoyable.
+            </p>
+            <p>
+              Whether you are visiting Sauraha for an exciting jungle adventure, a peaceful family holiday, a cultural experience or simply a relaxing break, we are here to make your stay comfortable and your journey easier. At Safari Wildlife Lodge &amp; Camp, your experience matters to us.
+            </p>
+          </div>
+
+          {/* Hotel Owner Photo Box & Name */}
+          <div className="pt-4 flex flex-col items-center text-center space-y-3">
+            <div className="relative w-64 sm:w-72 h-72 sm:h-80 rounded-2xl overflow-hidden border-2 border-brass/40 bg-warm-white shadow-md group">
+              <img
+                src={ownerPhotoImage}
+                alt={ownerName}
+                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_OWNER_PHOTO;
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setZoomedPhoto({ src: ownerPhotoImage, alt: ownerName })}
+                aria-label={`View full photo of ${ownerName}`}
+                title="View full photo"
+                className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-teal-dark tracking-tight">
+              {ownerName}
+            </h3>
+          </div>
+        </motion.div>
       </section>
 
       {/* GALLERY SECTION (SLIDING CAROUSEL) */}
@@ -1828,75 +2255,6 @@ export default function App() {
           </div>
 
         </motion.div>
-      </section>
-
-      {/* OWNER SECTION */}
-      <section id="owner" className="scroll-mt-24 py-20 bg-warm-white border-t border-brass/15 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold">Leadership & Hospitality</span>
-            <h2 className="font-serif text-4xl md:text-5xl text-teal-dark tracking-tight font-bold">
-              Meet Our Owner & Host
-            </h2>
-            <p className="text-sm text-teal-dark/70 leading-relaxed">
-              Dedicated to genuine local hospitality and personalized care throughout your stay in Chitwan.
-            </p>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7 }}
-            className="bg-warm-cream/40 rounded-2xl border border-brass/25 p-8 sm:p-10 md:p-12 shadow-sm"
-          >
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-10">
-              {/* Full Owner Photo Box */}
-              <div className="w-full md:w-72 lg:w-80 shrink-0">
-                <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden border-2 border-brass/40 bg-teal-dark/10 shadow-md group">
-                  <img
-                    src={ownerPhotoImage}
-                    alt="Safari Wildlife Lodge Owner & Host"
-                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.src = DEFAULT_OWNER_PHOTO;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-teal-dark/80 via-transparent to-transparent" />
-                  <button
-                    type="button"
-                    onClick={() => setZoomedPhoto({ src: ownerPhotoImage, alt: 'Owner & Host — Safari Wildlife Lodge' })}
-                    aria-label="View full photo of Owner & Host"
-                    title="View full photo"
-                    className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <div className="absolute bottom-4 left-4 right-4 text-warm-white">
-                    <span className="text-[10px] uppercase font-mono tracking-widest text-brass font-bold block">Owner & Host</span>
-                    <h3 className="font-serif text-lg font-bold">Safari Wildlife Lodge</h3>
-                    <span className="text-xs text-warm-white/75 font-mono">Ratnanagar, Chitwan</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Owner Message */}
-              <div className="space-y-4 text-center md:text-left">
-                <span className="text-xs uppercase tracking-widest font-mono text-brass font-bold block">Founder's Note</span>
-                <h3 className="font-serif text-3xl sm:text-4xl text-teal-dark font-bold leading-tight">
-                  A Personal Welcome From Our Host
-                </h3>
-                <p className="font-serif italic text-base sm:text-lg text-teal-dark/90 leading-relaxed">
-                  "When you stay at Safari Wildlife Lodge & Camp, you are welcomed like family. Our goal is simple: clean, comfortable rooms, fresh home-cooked food, and warm local care so you can enjoy the beauty of Chitwan in peace."
-                </p>
-                <p className="text-xs sm:text-sm text-teal-dark/75 leading-relaxed">
-                  Whether you are visiting for a relaxing weekend, a family holiday, or a wildlife adventure in Chitwan National Park, I am personally here with our team to assist you from arrival to departure.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
       </section>
 
       {/* CONTACT & EMBEDDED MAP SECTION */}
@@ -2552,7 +2910,7 @@ export default function App() {
                           </div>
                           <div className="md:col-span-2 space-y-2">
                             <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-                              Suite Picture Source
+                              Suite Picture 1 Source
                             </label>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-950 p-4.5 rounded border border-zinc-800">
@@ -2601,8 +2959,66 @@ export default function App() {
                                       referrerPolicy="no-referrer"
                                     />
                                     <div className="overflow-hidden">
-                                      <span className="text-[9px] text-emerald-400 font-mono font-bold block uppercase tracking-wider">● Image Connected</span>
+                                      <span className="text-[9px] text-emerald-400 font-mono font-bold block uppercase tracking-wider">● Image 1 Connected</span>
                                       <span className="text-[9px] text-zinc-400 font-mono block truncate">{roomForm.imageUrl.startsWith('data:') ? 'Base64 Loaded' : roomForm.imageUrl}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                              Suite Picture 2 Source (Second Photo)
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-950 p-4.5 rounded border border-zinc-800">
+                              <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-3 text-center group transition cursor-pointer relative min-h-[120px]">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      processAndSetImage(file, (base64) => {
+                                        setRoomForm(prev => ({ ...prev, secondaryImageUrl: base64 }));
+                                      });
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  id="suite-upload-input-2"
+                                />
+                                <Upload className={`w-6 h-6 mb-2 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                                <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                                  {compressingImage ? 'COMPRESSING...' : 'UPLOAD SECOND PHOTO'}
+                                </span>
+                                <span className="text-[9px] text-zinc-400 font-mono mt-1">Select JPG/PNG file from Device</span>
+                              </div>
+                              
+                              <div className="flex flex-col justify-between space-y-2">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-mono uppercase text-zinc-400 font-semibold block">Or paste second photo URL:</span>
+                                  <input
+                                    type="text"
+                                    value={roomForm.secondaryImageUrl || ''}
+                                    onChange={(e) => setRoomForm({ ...roomForm, secondaryImageUrl: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                                    placeholder="https://images.unsplash.com/..."
+                                  />
+                                </div>
+                                
+                                {roomForm.secondaryImageUrl && (
+                                  <div className="flex items-center gap-2 bg-zinc-905/60 p-2 rounded border border-zinc-850">
+                                    <img 
+                                      src={roomForm.secondaryImageUrl} 
+                                      className="w-10 h-10 object-cover rounded border border-zinc-700 bg-zinc-950" 
+                                      alt="Preview 2" 
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="overflow-hidden">
+                                      <span className="text-[9px] text-emerald-400 font-mono font-bold block uppercase tracking-wider">● Image 2 Connected</span>
+                                      <span className="text-[9px] text-zinc-400 font-mono block truncate">{roomForm.secondaryImageUrl.startsWith('data:') ? 'Base64 Loaded' : roomForm.secondaryImageUrl}</span>
                                     </div>
                                   </div>
                                 )}
@@ -2879,23 +3295,68 @@ export default function App() {
                               <option value="Paid">Paid/Premium Service</option>
                             </select>
                           </div>
-                          <div>
-                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">Lucide Icon Option</label>
-                            <select
-                              value={amenityForm.iconName || 'Compass'}
-                              onChange={(e) => setAmenityForm({ ...amenityForm, iconName: e.target.value })}
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 focus:border-brass/50 focus:outline-none"
-                            >
-                              <option value="Wifi">📶 Wifi</option>
-                              <option value="Utensils">🍲 Utensils / Dinings</option>
-                              <option value="Car">🚗 Airport Car Transfer</option>
-                              <option value="Plane">✈️ Flight Booking Help</option>
-                              <option value="Sparkles">✨ Sparkles / Deluxe Service</option>
-                              <option value="ShieldCheck">🛡️ ShieldCheck / High Security</option>
-                              <option value="Award">🏆 Award / Local Guide</option>
-                              <option value="Clock">⏰ Clock / 24h Desk</option>
-                              <option value="Compass">🧭 Compass / Tours</option>
-                            </select>
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                              Amenity Logo Image (Optional)
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-950 p-4 rounded border border-zinc-800">
+                              <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-3 text-center group transition cursor-pointer relative min-h-[100px]">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      processAndSetImage(file, (base64) => {
+                                        setAmenityForm(prev => ({ ...prev, logoUrl: base64 }));
+                                      });
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                  id="amenity-logo-upload-input"
+                                />
+                                <Upload className={`w-5 h-5 mb-1.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-200 block font-bold">
+                                  {compressingImage ? 'COMPRESSING...' : 'UPLOAD AMENITY LOGO'}
+                                </span>
+                                <span className="text-[8px] text-zinc-400 font-mono mt-0.5">Select PNG/JPG/SVG from Device</span>
+                              </div>
+
+                              <div className="flex flex-col justify-between space-y-2">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-mono uppercase text-zinc-400 font-semibold block">Or paste logo URL:</span>
+                                  <input
+                                    type="text"
+                                    value={amenityForm.logoUrl || ''}
+                                    onChange={(e) => setAmenityForm({ ...amenityForm, logoUrl: e.target.value })}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 focus:border-brass focus:outline-none font-mono text-xs"
+                                    placeholder="Leave empty for blank logo box"
+                                  />
+                                </div>
+                                {amenityForm.logoUrl && (
+                                  <div className="flex items-center justify-between gap-2 bg-zinc-900/60 p-2 rounded border border-zinc-800">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                      <img
+                                        src={amenityForm.logoUrl}
+                                        className="w-8 h-8 object-contain rounded border border-zinc-700 bg-zinc-950 p-0.5 shrink-0"
+                                        alt="Amenity logo preview"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                      <span className="text-[9px] text-emerald-400 font-mono font-bold uppercase tracking-wider truncate">
+                                        Logo Ready
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setAmenityForm(prev => ({ ...prev, logoUrl: '' }))}
+                                      className="text-[9px] font-mono uppercase text-red-400 hover:text-red-300 font-bold cursor-pointer shrink-0"
+                                    >
+                                      Clear
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div>
@@ -2929,20 +3390,68 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {amenities.map((amen) => (
                         <div key={amen.id} className="bg-zinc-900/40 rounded border border-zinc-850 p-4 flex flex-col justify-between hover:border-zinc-700 transition">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2.5">
-                                <div className="p-1.5 bg-zinc-800 rounded text-brass flex items-center justify-center">
-                                  {renderAmenityIcon(amen.iconName)}
+                                <div className="w-9 h-9 bg-zinc-850 rounded-lg border border-brass/30 flex items-center justify-center overflow-hidden shrink-0">
+                                  {amen.logoUrl ? (
+                                    <img
+                                      src={amen.logoUrl}
+                                      alt={`${amen.name} logo`}
+                                      className="w-full h-full object-contain p-1"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : null}
                                 </div>
                                 <span className="font-serif font-bold text-zinc-100 text-sm">{amen.name}</span>
                               </div>
-                              <span className={`text-[9px] uppercase font-mono tracking-wider px-2 py-0.5 rounded ${amen.category === 'Free' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50' : 'bg-amber-950/80 text-amber-400 border border-amber-900/50'}`}>
+                              <span className={`text-[9px] uppercase font-mono tracking-wider px-2 py-0.5 rounded shrink-0 ${amen.category === 'Free' ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50' : 'bg-amber-950/80 text-amber-400 border border-amber-900/50'}`}>
                                 {amen.category}
                               </span>
                             </div>
                             <p className="text-xs text-zinc-400 leading-relaxed min-h-[36px]">{amen.description}</p>
-                            <div className="text-[10px] text-zinc-500 font-mono">Icon: {amen.iconName}</div>
+
+                            {/* Direct Logo Upload Control on Amenity Card */}
+                            <div className="flex items-center gap-2 pt-1">
+                              <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-brass rounded border border-zinc-700 font-mono text-[10px] uppercase font-bold cursor-pointer transition">
+                                <Upload className="w-3 h-3" />
+                                <span>{amen.logoUrl ? 'Change Logo' : 'Add Logo'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      processAndSetImage(file, (base64) => {
+                                        const updated = amenities.map(item =>
+                                          item.id === amen.id ? { ...item, logoUrl: base64 } : item
+                                        );
+                                        setAmenities(updated);
+                                        localStorage.setItem('safari_dynamic_amenities', JSON.stringify(updated));
+                                        triggerAdminStatus(`✅ Logo updated for ${amen.name}!`);
+                                      });
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {amen.logoUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = amenities.map(item =>
+                                      item.id === amen.id ? { ...item, logoUrl: undefined } : item
+                                    );
+                                    setAmenities(updated);
+                                    localStorage.setItem('safari_dynamic_amenities', JSON.stringify(updated));
+                                    triggerAdminStatus(`🗑️ Logo cleared for ${amen.name}!`);
+                                  }}
+                                  className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-red-400 hover:text-red-300 rounded border border-zinc-800 font-mono text-[10px] uppercase font-bold cursor-pointer transition"
+                                >
+                                  Clear Logo
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="flex gap-4 pt-3 border-t border-zinc-800/60 mt-3">
@@ -3048,11 +3557,11 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Owner Photo Section */}
+                    {/* Owner Photo & Name Section */}
                     <div className="space-y-4">
                       <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
-                        <h4 className="font-serif text-base font-bold text-zinc-100">Owner Portrait Photo</h4>
-                        <p className="text-[11px] text-zinc-400 font-mono">Upload or update the full owner photo displayed in the Owner section.</p>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Hotel Owner Photo &amp; Name</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Upload the owner photo and set his name displayed below the welcome commitment section.</p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
@@ -3066,11 +3575,26 @@ export default function App() {
                               referrerPolicy="no-referrer"
                             />
                           </div>
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Owner Name</label>
+                            <input
+                              type="text"
+                              value={ownerName}
+                              onChange={(e) => {
+                                setOwnerName(e.target.value);
+                                localStorage.setItem('safari_dynamic_owner_name', e.target.value);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                              placeholder="Enter hotel owner name"
+                            />
+                          </div>
                           <button
                             onClick={() => {
                               setOwnerPhotoImage(DEFAULT_OWNER_PHOTO);
                               localStorage.removeItem('safari_dynamic_owner_photo');
-                              triggerAdminStatus('🔄 Owner photo restored to default!');
+                              setOwnerName(DEFAULT_OWNER_NAME);
+                              localStorage.removeItem('safari_dynamic_owner_name');
+                              triggerAdminStatus('🔄 Owner photo and name restored to default!');
                             }}
                             className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
                           >
@@ -3107,6 +3631,101 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Dining Area Photos (3 Photos) */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h4 className="font-serif text-base font-bold text-zinc-100">Safari Dining Area Photos (3 Photos)</h4>
+                          <p className="text-[11px] text-zinc-400 font-mono">Upload or paste URLs for the 3 photos displayed in the Safari Dining Area photo box.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDiningPhotos(DEFAULT_DINING_PHOTOS);
+                            localStorage.removeItem('safari_dynamic_dining_photos');
+                            triggerAdminStatus('🔄 Dining area photos restored to defaults!');
+                          }}
+                          className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                        >
+                          Reset Dining Photos
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-zinc-900/40 p-5 rounded-lg border border-zinc-800">
+                        {diningPhotos.map((photo, dIdx) => (
+                          <div key={dIdx} className="space-y-2.5 bg-zinc-950 p-3 rounded border border-zinc-800">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-brass font-bold block">
+                              Dining Photo {dIdx + 1}
+                            </span>
+                            <div className="h-28 rounded overflow-hidden border border-zinc-800 bg-zinc-900">
+                              <img
+                                src={photo}
+                                alt={`Dining Preview ${dIdx + 1}`}
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <label className="block w-full text-center py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[10px] uppercase font-bold rounded cursor-pointer transition">
+                              Upload Photo {dIdx + 1}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    processAndSetImage(file, (base64) => {
+                                      setDiningPhotos(prev => {
+                                        const next = [...prev];
+                                        next[dIdx] = base64;
+                                        localStorage.setItem('safari_dynamic_dining_photos', JSON.stringify(next));
+                                        return next;
+                                      });
+                                    });
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sauraha Video URL */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Discover Sauraha Video Box</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Paste a YouTube link or direct MP4 video URL for the video player below the Discover Sauraha guide.</p>
+                      </div>
+
+                      <div className="bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 space-y-3 max-w-3xl">
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Video URL (YouTube or MP4)</label>
+                          <input
+                            type="text"
+                            value={saurahaVideoUrl}
+                            onChange={(e) => {
+                              setSaurahaVideoUrl(e.target.value);
+                              localStorage.setItem('safari_dynamic_sauraha_video', e.target.value);
+                            }}
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSaurahaVideoUrl(DEFAULT_SAURAHA_VIDEO);
+                            localStorage.removeItem('safari_dynamic_sauraha_video');
+                            triggerAdminStatus('🔄 Sauraha video restored to default!');
+                          }}
+                          className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                        >
+                          Reset to Default Video
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Gmail Target Coordinates */}
                     <div className="space-y-4">
                       <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
@@ -3137,36 +3756,84 @@ export default function App() {
                     {/* Hero Background Banner Section */}
                     <div className="space-y-4">
                       <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
-                        <h4 className="font-serif text-base font-bold text-zinc-100">Hero Section Background</h4>
-                        <p className="text-[11px] text-zinc-400 font-mono">Customize the primary large welcome banner background image on your homepage.</p>
+                        <h4 className="font-serif text-base font-bold text-zinc-100">Hero Section Background (Image or Video)</h4>
+                        <p className="text-[11px] text-zinc-400 font-mono">Upload a looping background video (MP4/WebM/MOV) or customize the welcome banner image on your homepage.</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
                       {/* Current Preview */}
                       <div className="space-y-3">
-                        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Banner Preview</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Banner Preview</span>
+                          <span className={`px-2 py-0.5 rounded font-mono text-[9px] uppercase font-bold ${heroBgVideo ? 'bg-brass/20 text-brass border border-brass/40' : 'bg-zinc-800 text-zinc-300 border border-zinc-700'}`}>
+                            {heroBgVideo ? 'Video Background Active' : 'Image Background Active'}
+                          </span>
+                        </div>
                         <div className="relative rounded-lg overflow-hidden border border-zinc-800 aspect-video bg-zinc-950 group">
-                          <img 
-                            src={heroBgImage} 
-                            alt="Active Hero Background" 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80";
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                          {heroBgVideo ? (() => {
+                            const heroMedia = resolveHeroVideoMedia(heroBgVideo);
+                            if (heroMedia.isYoutube) {
+                              return (
+                                <iframe
+                                  key={heroMedia.src}
+                                  src={heroMedia.src}
+                                  title="Active Hero Video Preview"
+                                  allow="autoplay; encrypted-media"
+                                  className="w-full h-full pointer-events-none border-0"
+                                />
+                              );
+                            }
+                            return (
+                              <video
+                                key={heroMedia.src}
+                                src={heroMedia.src}
+                                poster={heroBgImage}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                            );
+                          })() : (
+                            <img 
+                              src={heroBgImage} 
+                              alt="Active Hero Background" 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.src = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1920&q=80";
+                              }}
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 pointer-events-none">
                             <div>
                               <p className="text-warm-white font-serif font-bold text-sm">Chitwan Wilderness Resort</p>
-                              <p className="text-zinc-400 font-mono text-[9px] truncate max-w-xs">{heroBgImage.startsWith('data:') ? 'Custom Uploaded Base64' : heroBgImage}</p>
+                              <p className="text-zinc-400 font-mono text-[9px] truncate max-w-xs">
+                                {heroBgVideo
+                                  ? (heroBgVideo.startsWith('blob:') ? 'Uploaded Background Video File' : heroBgVideo)
+                                  : (heroBgImage.startsWith('data:') ? 'Custom Uploaded Base64 Image' : heroBgImage)}
+                              </p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {heroBgVideo && (
+                            <button
+                              type="button"
+                              onClick={handleClearHeroVideo}
+                              className="px-3 py-1.5 bg-red-950/70 hover:bg-red-900/80 text-red-200 border border-red-800/60 font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Remove Video (Use Image)
+                            </button>
+                          )}
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={async () => {
                               if (window.confirm('Reset the welcome hero banner back to the original default image?')) {
+                                await handleClearHeroVideo();
                                 setHeroBgImage(SAFARI_HERO_LODGE);
                                 localStorage.removeItem('safari_dynamic_hero_bg');
                                 triggerAdminStatus('🔄 Hero background restored to factory default!');
@@ -3180,63 +3847,128 @@ export default function App() {
                       </div>
 
                       {/* Customize Source */}
-                      <div className="space-y-4">
-                        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Upload or Change Source</span>
-                        
-                        {/* Direct File Upload */}
-                        <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-5 text-center group transition cursor-pointer relative min-h-[145px] bg-zinc-950/50">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                processAndSetImage(file, (base64) => {
-                                  setHeroBgImage(base64);
-                                  localStorage.setItem('safari_dynamic_hero_bg', base64);
-                                  triggerAdminStatus('🎉 Hero background updated from computer!');
-                                });
-                              }
-                            }}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                            id="hero-banner-upload-input"
-                          />
-                          <Upload className={`w-8 h-8 mb-2.5 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
-                          <span className="text-[11.5px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
-                            {compressingImage ? 'COMPRESSING...' : 'UPLOAD DIRECTLY FROM DEVICE'}
+                      <div className="space-y-5">
+                        {/* Hero Background Video Upload & URL */}
+                        <div className="space-y-3 p-4 rounded-lg border border-brass/30 bg-zinc-950/60">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-brass font-bold flex items-center gap-1.5">
+                            <Video className="w-3.5 h-3.5" />
+                            Upload Hero Background Video
                           </span>
-                          <span className="text-[9px] text-zinc-500 font-mono mt-1.5">cPanel friendly dynamic base64 auto-compressor</span>
+
+                          <div className="flex flex-col justify-center items-center border border-dashed border-brass/40 hover:border-brass rounded-lg p-4 text-center group transition cursor-pointer relative min-h-[115px] bg-zinc-950/70">
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm,video/quicktime,video/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleHeroVideoUpload(file);
+                                }
+                                e.target.value = '';
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="hero-video-upload-input"
+                            />
+                            <Video className={`w-7 h-7 mb-2 text-brass group-hover:scale-110 transition-all ${uploadingHeroVideo ? 'animate-bounce' : ''}`} />
+                            <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-100 block font-bold">
+                              {uploadingHeroVideo ? 'SAVING VIDEO...' : 'UPLOAD BACKGROUND VIDEO'}
+                            </span>
+                            <span className="text-[9px] text-zinc-400 font-mono mt-1">MP4, WebM, MOV supported • Autoplays muted in loop</span>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-medium">Or paste direct video URL (MP4 / WebM / YouTube):</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={heroBgVideo.startsWith('blob:') ? '' : heroBgVideo}
+                                onChange={async (e) => {
+                                  const val = e.target.value;
+                                  if (heroVideoBlobUrlRef.current) {
+                                    URL.revokeObjectURL(heroVideoBlobUrlRef.current);
+                                    heroVideoBlobUrlRef.current = null;
+                                  }
+                                  try {
+                                    await clearHeroVideoFromIDB();
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                  setHeroBgVideo(val);
+                                  if (val.trim()) {
+                                    localStorage.setItem('safari_dynamic_hero_video', val.trim());
+                                    localStorage.setItem('safari_dynamic_hero_video_mode', 'url');
+                                  } else {
+                                    localStorage.removeItem('safari_dynamic_hero_video');
+                                    localStorage.removeItem('safari_dynamic_hero_video_mode');
+                                  }
+                                }}
+                                className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 text-warm-white placeholder-zinc-700 focus:border-brass focus:outline-none font-mono text-xs"
+                                placeholder="https://example.com/safari-hero.mp4"
+                              />
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Paste Web Address */}
-                        <div className="space-y-1.5">
-                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-medium">Or paste any web image url address:</label>
-                          <div className="flex gap-2">
+                        {/* Hero Background Image Upload & URL */}
+                        <div className="space-y-3">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Or Upload Hero Background Image (Fallback)</span>
+                          
+                          {/* Direct File Upload */}
+                          <div className="flex flex-col justify-center items-center border border-dashed border-zinc-750 hover:border-brass/50 rounded-lg p-4 text-center group transition cursor-pointer relative min-h-[115px] bg-zinc-950/50">
                             <input
-                              type="text"
-                              value={heroBgImage.startsWith('data:') ? '' : heroBgImage}
+                              type="file"
+                              accept="image/*"
                               onChange={(e) => {
-                                const val = e.target.value;
-                                if (val) {
-                                  setHeroBgImage(val);
-                                  localStorage.setItem('safari_dynamic_hero_bg', val);
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  processAndSetImage(file, (base64) => {
+                                    setHeroBgImage(base64);
+                                    localStorage.setItem('safari_dynamic_hero_bg', base64);
+                                    triggerAdminStatus('🎉 Hero background image updated from computer!');
+                                  });
                                 }
                               }}
-                              className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 text-warm-white placeholder-zinc-700 focus:border-brass focus:outline-none font-mono text-xs"
-                              placeholder="https://images.unsplash.com/your-custom-image-url..."
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="hero-banner-upload-input"
                             />
-                            {heroBgImage && !heroBgImage.startsWith('data:') && (
-                              <button
-                                onClick={() => {
-                                  setHeroBgImage(SAFARI_HERO_LODGE);
-                                  localStorage.setItem('safari_dynamic_hero_bg', SAFARI_HERO_LODGE);
-                                  triggerAdminStatus('🔄 Image URL cleared!');
+                            <Upload className={`w-7 h-7 mb-2 text-zinc-400 group-hover:text-brass transition-all ${compressingImage ? 'animate-bounce text-brass' : ''}`} />
+                            <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-10 block font-bold">
+                              {compressingImage ? 'COMPRESSING...' : 'UPLOAD BACKGROUND IMAGE'}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-mono mt-1">cPanel friendly dynamic base64 auto-compressor</span>
+                          </div>
+
+                          {/* Paste Web Address */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-medium">Or paste any web image url address:</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={heroBgImage.startsWith('data:') ? '' : heroBgImage}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val) {
+                                    setHeroBgImage(val);
+                                    localStorage.setItem('safari_dynamic_hero_bg', val);
+                                  }
                                 }}
-                                className="px-2.5 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded text-xs font-mono shrink-0 cursor-pointer"
-                              >
-                                Clear
-                              </button>
-                            )}
+                                className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 text-warm-white placeholder-zinc-700 focus:border-brass focus:outline-none font-mono text-xs"
+                                placeholder="https://images.unsplash.com/your-custom-image-url..."
+                              />
+                              {heroBgImage && !heroBgImage.startsWith('data:') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHeroBgImage(SAFARI_HERO_LODGE);
+                                    localStorage.setItem('safari_dynamic_hero_bg', SAFARI_HERO_LODGE);
+                                    triggerAdminStatus('🔄 Image URL cleared!');
+                                  }}
+                                  className="px-2.5 py-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded text-xs font-mono shrink-0 cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
