@@ -138,6 +138,106 @@ const clearHeroVideoFromIDB = async (): Promise<void> => {
   });
 };
 
+const SAURAHA_PHOTOS_KEY = 'sauraha_photos';
+
+const saveSaurahaPhotosToIDB = async (photos: string[]): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).put(photos, SAURAHA_PHOTOS_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
+const loadSaurahaPhotosFromIDB = async (): Promise<string[] | null> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readonly');
+    const req = tx.objectStore(HERO_VIDEO_STORE).get(SAURAHA_PHOTOS_KEY);
+    req.onsuccess = () => {
+      db.close();
+      resolve(Array.isArray(req.result) ? req.result : null);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+};
+
+const clearSaurahaPhotosFromIDB = async (): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).delete(SAURAHA_PHOTOS_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
+const UPDATES_VIDEO_KEY = 'updates_video_file';
+
+const saveUpdatesVideoToIDB = async (blob: Blob): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).put(blob, UPDATES_VIDEO_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
+const loadUpdatesVideoFromIDB = async (): Promise<Blob | null> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readonly');
+    const req = tx.objectStore(HERO_VIDEO_STORE).get(UPDATES_VIDEO_KEY);
+    req.onsuccess = () => {
+      db.close();
+      resolve(req.result instanceof Blob ? req.result : null);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+};
+
+const clearUpdatesVideoFromIDB = async (): Promise<void> => {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HERO_VIDEO_STORE, 'readwrite');
+    tx.objectStore(HERO_VIDEO_STORE).delete(UPDATES_VIDEO_KEY);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+};
+
 export default function App() {
   // Admin Token & Control Panel state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -391,6 +491,73 @@ export default function App() {
     return { isYoutube: false, src: trimmed };
   };
 
+  const [updatesVideoUrl, setUpdatesVideoUrl] = useState<string>('');
+  const [uploadingUpdatesVideo, setUploadingUpdatesVideo] = useState(false);
+  const updatesVideoBlobUrlRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (typeof window !== 'undefined' && 'indexedDB' in window) {
+      loadUpdatesVideoFromIDB()
+        .then((blob) => {
+          if (!active || !blob) return;
+          if (updatesVideoBlobUrlRef.current) {
+            URL.revokeObjectURL(updatesVideoBlobUrlRef.current);
+          }
+          const objectUrl = URL.createObjectURL(blob);
+          updatesVideoBlobUrlRef.current = objectUrl;
+          setUpdatesVideoUrl(objectUrl);
+        })
+        .catch((err) => console.error('Failed to load updates video from IndexedDB', err));
+    }
+    return () => {
+      active = false;
+      if (updatesVideoBlobUrlRef.current) {
+        URL.revokeObjectURL(updatesVideoBlobUrlRef.current);
+        updatesVideoBlobUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleUpdatesVideoUpload = async (file: File) => {
+    const isVideoMime = file.type.startsWith('video/');
+    const isVideoExt = /\.(mp4|webm|mov|m4v|ogg)$/i.test(file.name);
+    if (!isVideoMime && !isVideoExt) {
+      triggerAdminStatus('⚠️ Please select a valid video file (MP4, WebM, MOV).');
+      return;
+    }
+    setUploadingUpdatesVideo(true);
+    try {
+      await saveUpdatesVideoToIDB(file);
+      if (updatesVideoBlobUrlRef.current) {
+        URL.revokeObjectURL(updatesVideoBlobUrlRef.current);
+      }
+      const objectUrl = URL.createObjectURL(file);
+      updatesVideoBlobUrlRef.current = objectUrl;
+      setUpdatesVideoUrl(objectUrl);
+      triggerAdminStatus('🎬 "Our New updates" video uploaded successfully!');
+    } catch (err) {
+      console.error('Failed to save updates video', err);
+      triggerAdminStatus('⚠️ Failed to store video in browser storage.');
+    } finally {
+      setUploadingUpdatesVideo(false);
+    }
+  };
+
+  const handleClearUpdatesVideo = async () => {
+    try {
+      await clearUpdatesVideoFromIDB();
+    } catch (err) {
+      console.error('Failed to clear updates video from IndexedDB', err);
+    }
+    if (updatesVideoBlobUrlRef.current) {
+      URL.revokeObjectURL(updatesVideoBlobUrlRef.current);
+      updatesVideoBlobUrlRef.current = null;
+    }
+    setUpdatesVideoUrl('');
+    triggerAdminStatus('🗑️ "Our New updates" video removed!');
+  };
+
   const [brandLogoImage, setBrandLogoImage] = useState<string>(() => {
     const saved = localStorage.getItem('safari_dynamic_logo');
     if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '' && saved !== '[object Object]') {
@@ -443,29 +610,55 @@ export default function App() {
   });
   const [diningPhotoIndex, setDiningPhotoIndex] = useState(0);
 
-  const DEFAULT_SAURAHA_VIDEO = 'https://www.youtube.com/embed/-RxcEmC1DFQ';
+  const DEFAULT_SAURAHA_PHOTOS = [SAFARI_RHINO, SAFARI_CAMP_BONFIRE, SAFARI_HERO_LODGE];
 
-  const [saurahaVideoUrl, setSaurahaVideoUrl] = useState<string>(() => {
-    const saved = localStorage.getItem('safari_dynamic_sauraha_video');
-    if (saved && saved !== 'undefined' && saved !== 'null' && saved.trim() !== '') {
-      return saved.trim();
+  const [saurahaPhotos, setSaurahaPhotos] = useState<string[]>(() => {
+    const saved = localStorage.getItem('safari_dynamic_sauraha_photos');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.every((p: unknown) => typeof p === 'string' && p.trim() !== '')) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
-    return DEFAULT_SAURAHA_VIDEO;
+    return DEFAULT_SAURAHA_PHOTOS;
   });
+  const [saurahaPhotoIndex, setSaurahaPhotoIndex] = useState(0);
+  const [saurahaSlideDirection, setSaurahaSlideDirection] = useState<'left' | 'right'>('right');
+  const [saurahaPhotoUrlInput, setSaurahaPhotoUrlInput] = useState('');
 
-  const resolveVideoSource = (rawUrl: string): { isIframe: boolean; src: string } => {
-    const url = (rawUrl || DEFAULT_SAURAHA_VIDEO).trim();
-    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-    if (ytMatch && ytMatch[1]) {
-      return {
-        isIframe: true,
-        src: `https://www.youtube.com/embed/${ytMatch[1]}`
-      };
+  useEffect(() => {
+    let active = true;
+    if (typeof window !== 'undefined' && 'indexedDB' in window) {
+      loadSaurahaPhotosFromIDB()
+        .then((stored) => {
+          if (!active || !stored) return;
+          setSaurahaPhotos(stored);
+          setSaurahaPhotoIndex((prev) => (stored.length === 0 ? 0 : Math.min(prev, stored.length - 1)));
+        })
+        .catch((err) => console.error('Failed to load Sauraha photos from IndexedDB', err));
     }
-    return {
-      isIframe: false,
-      src: url
+    return () => {
+      active = false;
     };
+  }, []);
+
+  const persistSaurahaPhotos = async (nextPhotos: string[]) => {
+    setSaurahaPhotos(nextPhotos);
+    setSaurahaPhotoIndex((prev) => (nextPhotos.length === 0 ? 0 : Math.min(prev, nextPhotos.length - 1)));
+    try {
+      localStorage.setItem('safari_dynamic_sauraha_photos', JSON.stringify(nextPhotos));
+    } catch {
+      // Large multi-photo sets are safely stored in IndexedDB below
+    }
+    try {
+      await saveSaurahaPhotosToIDB(nextPhotos);
+    } catch (err) {
+      console.error('Failed to persist Sauraha photos in IndexedDB', err);
+    }
   };
 
   const [instagramUrl, setInstagramUrl] = useState<string>(() => {
@@ -781,6 +974,95 @@ export default function App() {
       setCompressingImage(false);
     };
     reader.readAsDataURL(file);
+  };
+
+  const compressImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_DIM = 1000;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            try {
+              resolve(canvas.toDataURL('image/jpeg', 0.72));
+              return;
+            } catch {
+              // Fallback to original data URL
+            }
+          }
+          resolve(e.target?.result as string);
+        };
+        img.onerror = () => reject(new Error('Invalid image file'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSaurahaMultiUpload = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) {
+      triggerAdminStatus('⚠️ Please select valid image files (JPG, PNG, WebP).');
+      return;
+    }
+    setCompressingImage(true);
+    try {
+      const compressed = await Promise.all(files.map(compressImageToBase64));
+      const next = [...saurahaPhotos, ...compressed];
+      await persistSaurahaPhotos(next);
+      triggerAdminStatus(`⚡ Added ${compressed.length} photo${compressed.length > 1 ? 's' : ''} to Discover Sauraha!`);
+    } catch (err) {
+      console.error(err);
+      triggerAdminStatus('⚠️ Some selected images could not be processed.');
+    } finally {
+      setCompressingImage(false);
+    }
+  };
+
+  const handleAddSaurahaPhotoUrl = async () => {
+    const trimmed = saurahaPhotoUrlInput.trim();
+    if (!trimmed) return;
+    const next = [...saurahaPhotos, trimmed];
+    await persistSaurahaPhotos(next);
+    setSaurahaPhotoUrlInput('');
+    triggerAdminStatus('✅ Photo URL added to Discover Sauraha!');
+  };
+
+  const handleDeleteSaurahaPhoto = async (indexToRemove: number) => {
+    const next = saurahaPhotos.filter((_, idx) => idx !== indexToRemove);
+    await persistSaurahaPhotos(next);
+    triggerAdminStatus('🗑️ Photo removed from Discover Sauraha!');
+  };
+
+  const handleResetSaurahaPhotos = async () => {
+    setSaurahaPhotos(DEFAULT_SAURAHA_PHOTOS);
+    setSaurahaPhotoIndex(0);
+    localStorage.removeItem('safari_dynamic_sauraha_photos');
+    try {
+      await clearSaurahaPhotosFromIDB();
+    } catch (err) {
+      console.error(err);
+    }
+    triggerAdminStatus('🔄 Discover Sauraha photos restored to defaults!');
   };
 
   // Admin Suite Handlers
@@ -1234,6 +1516,18 @@ export default function App() {
     setGalleryIndex((prev) => (prev === filteredGallery.length - 1 ? 0 : prev + 1));
   };
 
+  const handlePrevSaurahaPhoto = () => {
+    if (saurahaPhotos.length <= 1) return;
+    setSaurahaSlideDirection('left');
+    setSaurahaPhotoIndex((prev) => (prev === 0 ? saurahaPhotos.length - 1 : prev - 1));
+  };
+
+  const handleNextSaurahaPhoto = () => {
+    if (saurahaPhotos.length <= 1) return;
+    setSaurahaSlideDirection('right');
+    setSaurahaPhotoIndex((prev) => (prev === saurahaPhotos.length - 1 ? 0 : prev + 1));
+  };
+
   const handlePrevReview = () => {
     if (testimonials.length <= 1) return;
     setReviewsDirection('left');
@@ -1542,35 +1836,115 @@ export default function App() {
             </div>
           </div>
 
-          {/* 1 Standard Simple Video Box */}
-          {(() => {
-            const videoSource = resolveVideoSource(saurahaVideoUrl);
-            return (
-              <div className="pt-2">
-                <div className="w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-brass/30 shadow-md bg-teal-dark aspect-video">
-                  {videoSource.isIframe ? (
-                    <iframe
-                      title="Discover Sauraha & Chitwan National Park Video"
-                      src={videoSource.src}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <video
-                      controls
-                      playsInline
-                      preload="metadata"
-                      poster={SAFARI_RHINO}
-                      src={videoSource.src}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          {/* Discover Sauraha Sliding Photo Box (Unlimited Photos like Gallery) */}
+          <div className="pt-2">
+            <div className="relative max-w-5xl mx-auto px-2 sm:px-6 md:px-12 group">
+              {(() => {
+                const safeIdx = saurahaPhotos.length > 0 ? Math.min(saurahaPhotoIndex, saurahaPhotos.length - 1) : 0;
+                const currentPhoto = saurahaPhotos[safeIdx];
+                return (
+                  <>
+                    <div className="relative h-[320px] sm:h-[440px] md:h-[520px] w-full bg-warm-cream rounded-2xl overflow-hidden border border-brass/25 shadow-md">
+                      {saurahaPhotos.length > 0 && currentPhoto && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setZoomedPhoto({
+                              src: currentPhoto,
+                              alt: `Discover Sauraha & Chitwan (${safeIdx + 1})`
+                            })
+                          }
+                          aria-label="View full Sauraha photo"
+                          title="View full photo"
+                          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-teal-dark/80 hover:bg-brass text-warm-white hover:text-teal-dark border border-brass/40 backdrop-blur-sm flex items-center justify-center shadow-md transition-all cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      )}
+                      {saurahaPhotos.length > 0 ? (
+                        <AnimatePresence initial={false} custom={saurahaSlideDirection} mode="wait">
+                          <motion.div
+                            key={`${safeIdx}-${currentPhoto?.slice(0, 48)}`}
+                            custom={saurahaSlideDirection}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            drag="x"
+                            dragConstraints={{ left: 0, right: 0 }}
+                            dragElastic={0.6}
+                            onDragEnd={(_, { offset }) => {
+                              const swipe = offset.x;
+                              if (swipe < -60) {
+                                handleNextSaurahaPhoto();
+                              } else if (swipe > 60) {
+                                handlePrevSaurahaPhoto();
+                              }
+                            }}
+                            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none"
+                          >
+                            <img
+                              src={currentPhoto}
+                              alt={`Discover Sauraha & Chitwan ${safeIdx + 1}`}
+                              className="w-full h-full object-cover pointer-events-none"
+                              referrerPolicy="no-referrer"
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-teal-dark/70 bg-warm-cream px-4 text-center">
+                          <span className="font-mono text-xs">No Sauraha photos added yet. Upload photos from cPanel.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {saurahaPhotos.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePrevSaurahaPhoto}
+                          className="absolute left-0 md:left-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                          aria-label="Previous Sauraha Photo"
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextSaurahaPhoto}
+                          className="absolute right-0 md:right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-teal-dark hover:bg-brass border border-brass/25 hover:border-teal-dark text-brass hover:text-teal-dark transition-all duration-300 shadow-md transform hover:scale-105 cursor-pointer z-10"
+                          aria-label="Next Sauraha Photo"
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </button>
+                      </>
+                    )}
+
+                    {saurahaPhotos.length > 1 && (
+                      <div className="flex items-center justify-between mt-5 px-2">
+                        <span className="text-xs font-mono text-teal-dark/65 font-bold tracking-wide">
+                          {(safeIdx + 1).toString().padStart(2, '0')} <span className="text-brass">/</span> {saurahaPhotos.length.toString().padStart(2, '0')}
+                        </span>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {saurahaPhotos.map((_, idx) => (
+                            <button
+                              type="button"
+                              key={idx}
+                              onClick={() => {
+                                setSaurahaSlideDirection(idx > safeIdx ? 'right' : 'left');
+                                setSaurahaPhotoIndex(idx);
+                              }}
+                              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${idx === safeIdx ? 'bg-brass w-8 border border-teal-dark/30' : 'bg-teal-dark/20 w-2 hover:bg-teal-dark/50'}`}
+                              aria-label={`Go to Sauraha photo ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </motion.div>
       </section>
 
@@ -1722,6 +2096,26 @@ export default function App() {
             })}
           </div>
 
+        </div>
+      </section>
+
+      {/* OUR NEW UPDATES VIDEO SECTION */}
+      <section id="updates" className="scroll-mt-24 py-20 bg-teal-dark text-warm-white border-y border-brass/20 relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-warm-white tracking-tight font-bold text-center">
+            Our Hotel Tour And Updates
+          </h2>
+
+          <div className="w-full max-w-4xl mx-auto aspect-video rounded-xl overflow-hidden border border-brass/30">
+            <video
+              key={updatesVideoUrl || 'updates-video-player'}
+              src={updatesVideoUrl || undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
       </section>
 
@@ -3241,6 +3635,92 @@ export default function App() {
                         </div>
                       ))}
                     </div>
+
+                    <hr className="border-zinc-800 my-4" />
+
+                    {/* Discover Sauraha Photo Box Manager */}
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap justify-between items-center gap-2 bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
+                        <div>
+                          <h4 className="font-serif text-base font-bold text-zinc-100">Discover Sauraha Photo Box ({saurahaPhotos.length} Photos)</h4>
+                          <p className="text-[11px] text-zinc-400 font-mono">Add as many photos as you want for the Discover Sauraha sliding photo box (supports multi-file upload).</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleResetSaurahaPhotos}
+                          className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
+                        >
+                          Reset Defaults
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-900/40 p-4 rounded-lg border border-zinc-800">
+                        <div className="flex flex-col justify-center items-center border border-dashed border-brass/40 hover:border-brass rounded-lg p-4 text-center group transition cursor-pointer relative min-h-[115px] bg-zinc-950/60">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              handleSaurahaMultiUpload(e.target.files);
+                              e.target.value = '';
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            id="sauraha-gallery-tab-upload-input"
+                          />
+                          <Upload className={`w-6 h-6 mb-1.5 text-brass transition-all ${compressingImage ? 'animate-bounce' : ''}`} />
+                          <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-100 font-bold block">
+                            {compressingImage ? 'COMPRESSING PHOTOS...' : 'UPLOAD ONE OR MULTIPLE PHOTOS'}
+                          </span>
+                          <span className="text-[9px] text-zinc-400 font-mono mt-1">Select multiple JPG/PNG/WebP images at once</span>
+                        </div>
+
+                        <div className="flex flex-col justify-center space-y-2 bg-zinc-950/60 p-4 rounded-lg border border-zinc-800">
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">Or Add Photo via Web URL</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={saurahaPhotoUrlInput}
+                              onChange={(e) => setSaurahaPhotoUrlInput(e.target.value)}
+                              className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass focus:outline-none font-mono text-xs"
+                              placeholder="https://images.unsplash.com/..."
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddSaurahaPhotoUrl}
+                              className="px-3 py-1.5 bg-brass hover:bg-brass-light text-teal-dark font-mono text-[10px] uppercase font-bold rounded cursor-pointer shrink-0"
+                            >
+                              Add Photo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        {saurahaPhotos.map((photo, idx) => (
+                          <div key={idx} className="bg-zinc-900/50 rounded border border-zinc-800 p-2 flex flex-col justify-between group">
+                            <div className="relative aspect-video rounded overflow-hidden bg-zinc-950 mb-2">
+                              <img
+                                src={photo}
+                                alt={`Discover Sauraha ${idx + 1}`}
+                                className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                                referrerPolicy="no-referrer"
+                              />
+                              <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/70 text-brass font-mono text-[9px] font-bold">
+                                #{idx + 1}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSaurahaPhoto(idx)}
+                              className="w-full py-1 bg-zinc-950 hover:bg-red-950/60 text-red-400 hover:text-red-300 border border-zinc-800 rounded font-mono text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
                 )}
 
@@ -3691,38 +4171,153 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Sauraha Video URL */}
+                    {/* Discover Sauraha Photo Box (Unlimited Photos) */}
                     <div className="space-y-4">
-                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800">
-                        <h4 className="font-serif text-base font-bold text-zinc-100">Discover Sauraha Video Box</h4>
-                        <p className="text-[11px] text-zinc-400 font-mono">Paste a YouTube link or direct MP4 video URL for the video player below the Discover Sauraha guide.</p>
-                      </div>
-
-                      <div className="bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 space-y-3 max-w-3xl">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800 flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1 font-semibold">Video URL (YouTube or MP4)</label>
-                          <input
-                            type="text"
-                            value={saurahaVideoUrl}
-                            onChange={(e) => {
-                              setSaurahaVideoUrl(e.target.value);
-                              localStorage.setItem('safari_dynamic_sauraha_video', e.target.value);
-                            }}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-1.5 text-zinc-100 placeholder-zinc-700 focus:border-brass/50 focus:outline-none font-mono text-xs"
-                            placeholder="https://www.youtube.com/watch?v=..."
-                          />
+                          <h4 className="font-serif text-base font-bold text-zinc-100">Discover Sauraha Photo Box ({saurahaPhotos.length} Photos)</h4>
+                          <p className="text-[11px] text-zinc-400 font-mono">Upload as many photos as you like for the sliding photo box below the Discover Sauraha guide.</p>
                         </div>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSaurahaVideoUrl(DEFAULT_SAURAHA_VIDEO);
-                            localStorage.removeItem('safari_dynamic_sauraha_video');
-                            triggerAdminStatus('🔄 Sauraha video restored to default!');
-                          }}
+                          onClick={handleResetSaurahaPhotos}
                           className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 hover:text-white font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer"
                         >
-                          Reset to Default Video
+                          Reset Sauraha Photos
                         </button>
+                      </div>
+
+                      <div className="bg-zinc-900/40 p-5 rounded-lg border border-zinc-800 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col justify-center items-center border border-dashed border-brass/40 hover:border-brass rounded-lg p-4 text-center group transition cursor-pointer relative min-h-[115px] bg-zinc-950/60">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                handleSaurahaMultiUpload(e.target.files);
+                                e.target.value = '';
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="sauraha-banner-tab-upload-input"
+                            />
+                            <Upload className={`w-6 h-6 mb-1.5 text-brass transition-all ${compressingImage ? 'animate-bounce' : ''}`} />
+                            <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-100 font-bold block">
+                              {compressingImage ? 'COMPRESSING PHOTOS...' : 'UPLOAD ONE OR MULTIPLE PHOTOS'}
+                            </span>
+                            <span className="text-[9px] text-zinc-400 font-mono mt-1">Select multiple JPG/PNG/WebP images at once</span>
+                          </div>
+
+                          <div className="flex flex-col justify-center space-y-2 bg-zinc-950/60 p-4 rounded-lg border border-zinc-800">
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">Or Add Photo via Web URL</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={saurahaPhotoUrlInput}
+                                onChange={(e) => setSaurahaPhotoUrlInput(e.target.value)}
+                                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-100 placeholder-zinc-600 focus:border-brass focus:outline-none font-mono text-xs"
+                                placeholder="https://images.unsplash.com/..."
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddSaurahaPhotoUrl}
+                                className="px-3 py-1.5 bg-brass hover:bg-brass-light text-teal-dark font-mono text-[10px] uppercase font-bold rounded cursor-pointer shrink-0"
+                              >
+                                Add Photo
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {saurahaPhotos.map((photo, idx) => (
+                            <div key={idx} className="bg-zinc-950 rounded border border-zinc-800 p-2 flex flex-col justify-between group">
+                              <div className="relative aspect-video rounded overflow-hidden bg-zinc-900 mb-2">
+                                <img
+                                  src={photo}
+                                  alt={`Sauraha Preview ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/70 text-brass font-mono text-[9px] font-bold">
+                                  #{idx + 1}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSaurahaPhoto(idx)}
+                                className="w-full py-1 bg-zinc-900 hover:bg-red-950/60 text-red-400 hover:text-red-300 border border-zinc-800 rounded font-mono text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Our New updates Video Section */}
+                    <div className="space-y-4">
+                      <div className="bg-zinc-900/40 p-3.5 rounded border border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h4 className="font-serif text-base font-bold text-zinc-100">Our Hotel Tour And Updates Video</h4>
+                          <p className="text-[11px] text-zinc-400 font-mono">Upload a video from your device for the &quot;Our Hotel Tour And Updates&quot; section below the Rooms section.</p>
+                        </div>
+                        {updatesVideoUrl && (
+                          <button
+                            type="button"
+                            onClick={handleClearUpdatesVideo}
+                            className="px-3 py-1.5 bg-red-950/70 hover:bg-red-900/80 text-red-200 border border-red-800/60 font-mono text-[10px] uppercase font-bold rounded tracking-wider transition cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Remove Video
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800">
+                        <div className="space-y-2">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Active Video Preview</span>
+                          <div className="rounded-lg overflow-hidden border border-zinc-800 aspect-video bg-zinc-950 flex items-center justify-center">
+                            {updatesVideoUrl ? (
+                              <video
+                                key={updatesVideoUrl}
+                                src={updatesVideoUrl}
+                                controls
+                                playsInline
+                                preload="metadata"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[11px] font-mono text-zinc-500 px-4 text-center">No video uploaded yet</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">Upload Video from Device</span>
+                          <div className="flex flex-col justify-center items-center border border-dashed border-brass/40 hover:border-brass rounded-lg p-5 text-center group transition cursor-pointer relative min-h-[145px] bg-zinc-950/60">
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm,video/quicktime,video/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleUpdatesVideoUpload(file);
+                                }
+                                e.target.value = '';
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                              id="updates-video-upload-input"
+                            />
+                            <Video className={`w-8 h-8 mb-2.5 text-brass group-hover:scale-110 transition-all ${uploadingUpdatesVideo ? 'animate-bounce' : ''}`} />
+                            <span className="text-[11.5px] font-mono uppercase tracking-widest text-zinc-100 block font-bold">
+                              {uploadingUpdatesVideo ? 'SAVING VIDEO...' : 'UPLOAD VIDEO FROM DEVICE'}
+                            </span>
+                            <span className="text-[9px] text-zinc-400 font-mono mt-1.5">Supports MP4, WebM, MOV video files</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
